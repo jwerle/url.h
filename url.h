@@ -135,26 +135,17 @@ url_get_hash (char *url);
 char *
 url_get_port (char *url);
 
-char *
-url_format (url_data_t *data);
-
 void
 url_free (url_data_t *data);
 
 bool
 url_is_protocol (char *str);
 
-bool
-url_has_auth (char *str);
-
 void
 url_inspect (char *url);
 
 void
 url_data_inspect (url_data_t *data);
-
-void
-url_free (url_data_t *data);
 
 
 // implementation
@@ -285,12 +276,11 @@ url_parse (char *url) {
 
   char *search = malloc(sizeof(search));
   if (!search) return NULL;
-  tmp_path = strff(path, pathname_len);
+  tmp_path = strff(tmp_path, pathname_len);
   strcat(search, "");
   sscanf(tmp_path, "%[^#]", search);
   data->search = search;
   int search_len = strlen(search);
-  tmp_path = strrwd(tmp_path, pathname_len);
   free(tmp_path);
 
   char *query = malloc(sizeof(char));
@@ -304,7 +294,6 @@ url_parse (char *url) {
   strcat(hash, "");
   sscanf(tmp_path, "%s", hash);
   data->hash = hash;
-  tmp_path = strrwd(tmp_path, pathname_len + search_len);
   free(tmp_path);
 
   char *port = malloc(sizeof(char));
@@ -313,7 +302,6 @@ url_parse (char *url) {
   tmp_hostname = strff(hostname, host_len + 1); // +1 for ':' char
   sscanf(tmp_hostname, "%s", port);
   data->port = port;
-  tmp_hostname = strrwd(tmp_hostname, host_len + 1);
   free(tmp_hostname);
 
   return data;
@@ -532,17 +520,6 @@ url_free (url_data_t *data) {
   if (data->hash) free(data->hash);
   if (data->search) free(data->search);
   if (data->query) free(data->query);
-}
-
-char *
-url_format (url_data_t *data) {
-  if (!data) return NULL;
-  char *url = strdup(data->href);
-  if (!data->pathname) {
-    sprintf(url, "%s/", url);
-  }
-
-  return url;
 }
 
 
