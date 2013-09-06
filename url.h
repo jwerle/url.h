@@ -338,9 +338,10 @@ url_is_protocol (char *str) {
 
 bool
 url_is_ssh (char *str) {
+  str = strdup(str);
   if (0 == strcmp(str, "ssh") ||
       0 == strcmp(str, "git")) {
-
+    free(str);
     return true;
 
   }
@@ -370,6 +371,7 @@ char *
 url_get_hostname (char *url) {
   int l = 3;
   char *protocol = url_get_protocol(url);
+  char *tmp_protocol = strdup(protocol);
   char *auth = url_get_auth(url);
 
   if (!protocol) return NULL;
@@ -380,9 +382,11 @@ url_get_hostname (char *url) {
 
   free(protocol);
 
-  return url_is_ssh(protocol)
+  char * hostname = url_is_ssh(tmp_protocol)
            ? get_part(url, "%[^:]", l)
            : get_part(url, "%[^/]", l);
+  free(tmp_protocol);
+  return hostname;
 }
 
 char *
