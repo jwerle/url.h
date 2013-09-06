@@ -141,6 +141,9 @@ url_free (url_data_t *data);
 bool
 url_is_protocol (char *str);
 
+bool
+url_is_ssh (char *str);
+
 void
 url_inspect (char *url);
 
@@ -229,12 +232,15 @@ url_parse (char *url) {
   data->href = url;
   char *tmp;
   char *tmp_url = strdup(url);
+  bool is_ssh = false;
 
   char *protocol = url_get_protocol(tmp_url);
   if (!protocol) return NULL;
   // length of protocol plus ://
   int protocol_len = (int) strlen(protocol) + 3;
   data->protocol = protocol;
+
+  is_ssh = url_is_ssh(protocol);
 
   char *auth = malloc(sizeof(char));
   int auth_len = 0;
@@ -246,7 +252,12 @@ url_parse (char *url) {
 
   data->auth = auth;
 
-  char *hostname = get_part(tmp_url, "%[^/]", protocol_len + auth_len);
+  char *hostname;
+
+  hostname = (is_ssh)
+              ? get_part(tmp_url, "%[^:]", protocol_len + auth_len)
+              : get_part(tmp_url, "%[^/]", protocol_len + auth_len);
+
   if (!hostname) return NULL;
   int hostname_len = (int) strlen(hostname);
   char *tmp_hostname = strdup(hostname);
@@ -259,10 +270,15 @@ url_parse (char *url) {
   data->host = host;
 
   char *tmp_path;
-  tmp_path = get_part(tmp_url, "/%s", protocol_len + auth_len + hostname_len);
+
+  tmp_path = (is_ssh)
+              ? get_part(tmp_url, ":%s", protocol_len + auth_len + hostname_len)
+              : get_part(tmp_url, "/%s", protocol_len + auth_len + hostname_len);
+
   char *path = malloc(strlen(tmp_path) * sizeof(char));
   if (!path) return NULL;
-  sprintf(path, "/%s", tmp_path);
+  char *fmt = (is_ssh)? "%s" : "/%s";
+  sprintf(path, fmt, tmp_path);
   data->path = path;
   free(tmp_path);
 
@@ -320,6 +336,18 @@ url_is_protocol (char *str) {
   return false;
 }
 
+bool
+url_is_ssh (char *str) {
+  if (0 == strcmp(str, "ssh") ||
+      0 == strcmp(str, "git")) {
+
+    return true;
+
+  }
+
+  return false;
+}
+
 char *
 url_get_protocol (char *url) {
   char *protocol = malloc(URL_PROTOCOL_MAX_LENGTH * sizeof(char));
@@ -352,7 +380,9 @@ url_get_hostname (char *url) {
 
   free(protocol);
 
-  return get_part(url, "%[^/]", l);
+  return url_is_ssh(protocol)
+           ? get_part(url, "%[^:]", l)
+           : get_part(url, "%[^/]", l);
 }
 
 char *
@@ -388,25 +418,30 @@ char *
 url_get_path (char *url) {
   int l = 3;
   char *tmp_path;
-  char *path = malloc(sizeof(char));
   char *protocol = url_get_protocol(url);
   char *auth = url_get_auth(url);
   char *hostname = url_get_hostname(url);
 
+
   if (!protocol || !hostname)
     return NULL;
 
-  l += (int) strlen(protocol);
-  l += (int) strlen(hostname);
+  bool is_ssh = url_is_ssh(protocol);
+
+  l += (int) strlen(protocol) + (int) strlen(hostname);
 
   if (auth) l+= (int) strlen(auth) +1; // @ symbol
 
-  tmp_path = get_part(url, "/%s", l);
-  path = realloc(path, strlen(tmp_path) * sizeof(char));
-  sprintf(path, "/%s", tmp_path);
+  tmp_path = (is_ssh)
+              ? get_part(url, ":%s", l)
+              : get_part(url, "/%s", l);
 
-  free(protocol);
+  char *fmt = (is_ssh)? "%s" : "/%s";
+  char *path = malloc(strlen(tmp_path) * sizeof(char));
+  sprintf(path, fmt, tmp_path);
+
   if (auth) free(auth);
+  free(protocol);
   free(hostname);
   free(tmp_path);
 

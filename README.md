@@ -305,6 +305,20 @@ url_data_inspect(parsed);
     .port: "8080"
 ```
 
+### url_is_ssh(protocol);
+
+Checks if a given protocol is an ssh protocol like `ssh` or `git`
+
+```
+bool
+url_is_ssh (char *str);
+```
+
+***example***
+
+```
+bool is_ssh = url_is_ssh(url_get_protocol(url));
+```
 
 ## licence
 
