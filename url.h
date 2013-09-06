@@ -13,6 +13,13 @@
 
 
 /**
+ * url.h version
+ */
+
+#define URL_VERSION 0.0.1
+
+
+/**
  * Max length of a url protocol scheme
  */
 
