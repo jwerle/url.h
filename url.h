@@ -163,8 +163,17 @@ strff (char *ptr, int n) {
 }
 
 static char *
+strrwd (char *ptr, int n) {
+  int y = 0;
+  for (int i = 0; i < n; ++i) {
+    y = *ptr--;
+  }
+
+  return strdup(ptr);
+}
+
+static char *
 get_part (char *url, const char *format, int l) {
-  int n, i = 0;
   bool has = false;
   char *tmp = malloc(sizeof(char));
   char *tmp_url = strdup(url);
@@ -181,22 +190,18 @@ get_part (char *url, const char *format, int l) {
   // of characters in the `prototcol` char
   // plus 3 characters that represent the `://`
   // part of the url
-  for (; i < l; ++i) {
-    n = *fmt_url++;
-  }
+  fmt_url = strff(fmt_url, l);
 
   sscanf(fmt_url, format, tmp);
 
-  if (0 != strcmp(tmp, fmt_url)) {
+  if (0 != strcmp(tmp, tmp_url)) {
     has = true;
     ret = strdup(tmp);
   }
 
   // descrement pointer to original
   // position so it can be free'd
-  for (i = 0; i < l; ++i) {
-    n = *fmt_url--;
-  }
+  fmt_url = strrwd(fmt_url, l);
 
   free(tmp);
   free(tmp_url);
@@ -211,20 +216,86 @@ url_parse (char *url) {
   if (!data) return NULL;
 
   data->href = url;
+  char *tmp;
+  char *tmp_url = strdup(url);
 
-  // required
-  if (!(data->protocol = url_get_protocol(url)) ||
-      !(data->hostname = url_get_hostname(url)))
-    return NULL;
+  char *protocol = url_get_protocol(tmp_url);
+  if (!protocol) return NULL;
+  // length of protocol plus ://
+  int protocol_len = (int) strlen(protocol) + 3;
+  data->protocol = protocol;
 
-  data->auth = url_get_auth(url);
-  data->host = url_get_host(url);
-  data->path = url_get_path(url);
-  data->pathname = url_get_pathname(url);
-  data->port = url_get_port(url);
-  data->search = url_get_search(url);
-  data->query = url_get_query(url);
-  data->hash = url_get_hash(url);
+  char *auth = malloc(sizeof(char));
+  int auth_len = 0;
+  if ((tmp = strstr(tmp_url, "@"))) {
+    auth = get_part(tmp_url, "%[^@]", protocol_len);
+    auth_len = strlen(auth);
+    if (auth) auth_len++;
+  }
+
+  data->auth = auth;
+
+  char *hostname = get_part(tmp_url, "%[^/]", protocol_len + auth_len);
+  if (!hostname) return NULL;
+  int hostname_len = (int) strlen(hostname);
+  char *tmp_hostname = strdup(hostname);
+  data->hostname = hostname;
+
+  char *host = malloc(strlen(tmp_hostname) * sizeof(char));
+  sscanf(tmp_hostname, "%[^:]", host);
+  if (!host) return NULL;
+  int host_len = (int) strlen(host);
+  data->host = host;
+
+  char *path = malloc(sizeof(char));
+  char *tmp_path;
+  if (!path) return NULL;
+  tmp_path = get_part(tmp_url, "/%s", protocol_len + auth_len + hostname_len);
+  path = realloc(path, strlen(tmp_path) * sizeof(char));
+  sprintf(path, "/%s", tmp_path);
+  data->path = path;
+  free(tmp_path);
+
+  char *pathname = malloc(sizeof(char));
+  if (!pathname) return NULL;
+  strcat(pathname, "");
+  tmp_path = strdup(path);
+  sscanf(tmp_path, "%[^? | ^#]", pathname);
+  int pathname_len = strlen(pathname);
+  data->pathname = pathname;
+
+  char *search = malloc(sizeof(search));
+  if (!search) return NULL;
+  tmp_path = strff(path, pathname_len);
+  strcat(search, "");
+  sscanf(tmp_path, "%[^#]", search);
+  data->search = search;
+  int search_len = strlen(search);
+  tmp_path = strrwd(tmp_path, pathname_len);
+  free(tmp_path);
+
+  char *query = malloc(sizeof(char));
+  if (!query) return NULL;
+  sscanf(search, "?%s", query);
+  data->query = query;
+
+  char *hash = malloc(sizeof(char));
+  if (!hash) return NULL;
+  tmp_path = strff(path, pathname_len + search_len);
+  strcat(hash, "");
+  sscanf(tmp_path, "%s", hash);
+  data->hash = hash;
+  tmp_path = strrwd(tmp_path, pathname_len + search_len);
+  free(tmp_path);
+
+  char *port = malloc(sizeof(char));
+  if (!port) return NULL;
+
+  tmp_hostname = strff(hostname, host_len + 1); // +1 for ':' char
+  sscanf(tmp_hostname, "%s", port);
+  data->port = port;
+  tmp_hostname = strrwd(tmp_hostname, host_len + 1);
+  free(tmp_hostname);
 
   return data;
 }
@@ -348,6 +419,8 @@ url_get_search (char *url) {
   strcat(search, "");
   sscanf(tmp_path, "%[^#]", search);
 
+  tmp_path = strrwd(tmp_path, (int)strlen(pathname));
+
   free(path);
   free(pathname);
 
@@ -393,10 +466,9 @@ url_get_port (char *url) {
   char *host = url_get_host(url);
   if (!port || !hostname) return NULL;
 
- char *tmp_hostname = strff(hostname, strlen(host) +1);
+  char *tmp_hostname = strff(hostname, strlen(host) +1);
   sscanf(tmp_hostname, "%s", port);
 
-  printf("%s\n", port);
   free(hostname);
   free(tmp_hostname);
   return port;
@@ -441,7 +513,7 @@ url_free (url_data_t *data) {
 char *
 url_format (url_data_t *data) {
   if (!data) return NULL;
-  char *url = data->href;
+  char *url = strdup(data->href);
   if (!data->pathname) {
     sprintf(url, "%s/", url);
   }
