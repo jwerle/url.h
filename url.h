@@ -152,6 +152,19 @@ url_free (url_data_t *data);
 
 // implementation
 
+
+// non C99 standard functions
+#if __STDC_VERSION__ >= 199901L
+char *
+strdup (const char *str) {
+  int n = strlen(str) + 1;
+  char *dup = malloc(n);
+  if (dup) strcpy(dup, str);
+  return dup;
+}
+#endif
+
+
 static char *
 strff (char *ptr, int n) {
   int y = 0;
@@ -247,11 +260,10 @@ url_parse (char *url) {
   int host_len = (int) strlen(host);
   data->host = host;
 
-  char *path = malloc(sizeof(char));
   char *tmp_path;
-  if (!path) return NULL;
   tmp_path = get_part(tmp_url, "/%s", protocol_len + auth_len + hostname_len);
-  path = realloc(path, strlen(tmp_path) * sizeof(char));
+  char *path = malloc(strlen(tmp_path) * sizeof(char));
+  if (!path) return NULL;
   sprintf(path, "/%s", tmp_path);
   data->path = path;
   free(tmp_path);
@@ -439,21 +451,26 @@ url_get_query (char *url) {
 
 char *
 url_get_hash (char *url) {
-  char *path = url_get_path(url);
-  char *pathname = url_get_pathname(url);
-  char *search = url_get_search(url);
   char *hash = malloc(sizeof(char));
+  if (!hash) return NULL;
 
-  if (!path || !pathname || !hash)
-    return NULL;
+  char *path = url_get_path(url);
+  if (!path) return NULL;
 
-  char *tmp_path = strff(path, (int)strlen(pathname) + (int)strlen(search));
+  char *pathname = url_get_pathname(url);
+  if (!pathname) return NULL;
+  char *search = url_get_search(url);
+
+  int pathname_len = (int) strlen(pathname);
+  int search_len = (int) strlen(search);
+  char *tmp_path = strff(path, pathname_len + search_len);
+
   strcat(hash, "");
   sscanf(tmp_path, "%s", hash);
-
-  free(path);
+  tmp_path = strrwd(tmp_path, pathname_len + search_len);
   free(tmp_path);
   free(pathname);
+  free(path);
   if (search) free(search);
 
   return hash;
