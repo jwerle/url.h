@@ -1,6 +1,5 @@
-
-#ifndef _URL_H_
-#define _URL_H_ 1
+#ifndef URL_H
+#define URL_H 1
 
 /**
  * Dependencies
