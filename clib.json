@@ -5,5 +5,6 @@
   "description": "Parse URLs much like Node's url module",
   "keywords": ["url", "parse"],
   "license": "MIT",
+  "makefile": "Makefile",
   "src": ["url.h"]
 }
