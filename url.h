@@ -152,7 +152,7 @@ url_data_inspect (url_data_t *data);
 
 // implementation
 
-
+#ifndef HAVE_STRDUP
 // non C99 standard functions
 #if __POSIX_C_SOURCE__ < 200809L
 char *
@@ -162,6 +162,7 @@ strdup (const char *str) {
     if (dup) strcpy(dup, str);
     return dup;
 }
+#endif
 #endif
 
 
