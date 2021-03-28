@@ -1,6 +1,7 @@
 
 #include <url.h>
 #include <assert.h>
+#include <string.h>
 
 int
 main (void) {
