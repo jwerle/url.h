@@ -1,6 +1,6 @@
 {
   "name": "url",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "repo": "jwerle/url.h",
   "description": "Parse URLs much like Node's url module",
   "keywords": ["url", "parse"],
