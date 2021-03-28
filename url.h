@@ -13,7 +13,7 @@
  * url.h version
  */
 
-#define URL_VERSION 0.1.2
+#define URL_VERSION 0.2.0
 
 
 /**
