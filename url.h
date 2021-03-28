@@ -168,9 +168,8 @@ strdup (const char *str) {
 
 static char *
 strff (char *ptr, int n) {
-  int y = 0;
   for (int i = 0; i < n; ++i) {
-    y = *ptr++;
+    (void) *ptr++;
   }
 
   return strdup(ptr);
@@ -178,9 +177,8 @@ strff (char *ptr, int n) {
 
 static char *
 strrwd (char *ptr, int n) {
-  int y = 0;
   for (int i = 0; i < n; ++i) {
-    y = *ptr--;
+    (void) *ptr--;
   }
 
   return strdup(ptr);
@@ -228,7 +226,6 @@ url_parse (char *url) {
   if (!data) return NULL;
 
   data->href = url;
-  char *tmp;
   char *tmp_url = strdup(url);
   bool is_ssh = false;
 
