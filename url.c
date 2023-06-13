@@ -126,7 +126,7 @@ url_parse (char *url) {
 
   data->auth = auth;
 
-  char *hostnamec = (is_ssh)
+  char *hostname = (is_ssh)
     ? get_part(tmp_url, "%[^:]", protocol_len + auth_len)
     : get_part(tmp_url, "%[^/]", protocol_len + auth_len);
 
@@ -195,7 +195,7 @@ url_parse (char *url) {
   strcpy(search, "");
   sscanf(tmp_path, "%[^#]", search);
   data->search = search;
-  const search_len = strlen(search);
+  const size_t search_len = strlen(search);
   free(tmp_path);
 
   char *query = (char *) malloc(sizeof(char));
