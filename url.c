@@ -103,7 +103,6 @@ url_parse (char *url) {
 
   data->href = url;
   char *tmp_url = strdup(url);
-  bool is_ssh = false;
 
   char *protocol = url_get_protocol(tmp_url);
   if (!protocol) {
@@ -114,17 +113,14 @@ url_parse (char *url) {
   const size_t protocol_len = strlen(protocol) + 3;
   data->protocol = protocol;
 
-  is_ssh = url_is_ssh(protocol);
+  const bool is_ssh = url_is_ssh(protocol);
 
-  char *auth = (char *) malloc(sizeof(char));
-  int auth_len = 0;
+  size_t auth_len = 0;
   if (strstr(tmp_url, "@")) {
-    auth = get_part(tmp_url, "%[^@]", protocol_len);
-    auth_len = strlen(auth);
-    if (auth) auth_len++;
+    data->auth = get_part(tmp_url, "%[^@]", protocol_len);
+    auth_len = strlen(data->auth);
+    if (data->auth) auth_len++;
   }
-
-  data->auth = auth;
 
   char *hostname = (is_ssh)
     ? get_part(tmp_url, "%[^:]", protocol_len + auth_len)
@@ -295,12 +291,12 @@ url_get_hostname (char *url) {
 
 char *
 url_get_host (char *url) {
-  char *host = (char *) malloc(sizeof(char));
+  char *host = NULL;
   char *hostname = url_get_hostname(url);
 
-  if (!host || !hostname) return NULL;
+  if (!hostname) return NULL;
 
-  sscanf(hostname, "%[^:]", host);
+  sscanf(hostname, "%m[^:]", &host);
 
   free(hostname);
 
@@ -413,16 +409,14 @@ url_get_hash (char *url) {
 
 char *
 url_get_port (char *url) {
-  char *port = (char *) malloc(sizeof(char));
+  char *port = NULL;
   char *hostname = url_get_hostname(url);
   char *host = url_get_host(url);
-  if (!port || !hostname) return NULL;
+  if (!hostname) return NULL;
 
-  char *tmp_hostname = strff(hostname, strlen(host) +1);
-  sscanf(tmp_hostname, "%s", port);
-
+  sscanf(hostname + strlen(host) + 1, "%ms", &port);
   free(hostname);
-  free(tmp_hostname);
+  free(host);
   return port;
 }
 
