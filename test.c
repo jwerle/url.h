@@ -3,6 +3,14 @@
 #include <assert.h>
 #include <string.h>
 
+#define STRING_ASSERT(expect, str) \
+	do{  \
+		char* s = str; \
+		assert( strcmp(expect, s) == 0); \
+		free(s); \
+	}while(0)
+
+
 int
 main (void) {
   //url_inspect("https://google.com/search?q=github");
@@ -47,25 +55,26 @@ main (void) {
   assert(url_is_protocol("ftp"));
   assert(url_is_protocol("javascript"));
 
-  assert(0 == strcmp("http",                       url_get_protocol(url)));
-  assert(0 == strcmp("user:pass",                  url_get_auth(url)));
-  assert(0 == strcmp("subdomain.host.com:8080",    url_get_hostname(url)));
-  assert(0 == strcmp("subdomain.host.com",         url_get_host(url)));
-  assert(0 == strcmp("/p/a/t/h",                   url_get_pathname(url)));
-  assert(0 == strcmp("/p/a/t/h?query=string#hash", url_get_path(url)));
-  assert(0 == strcmp("?query=string",              url_get_search(url)));
-  assert(0 == strcmp("query=string",               url_get_query(url)));
-  assert(0 == strcmp("#hash",                      url_get_hash(url)));
-  assert(0 == strcmp("8080",                       url_get_port(url)));
+  STRING_ASSERT("http",                       url_get_protocol(url));
+  STRING_ASSERT("user:pass",                  url_get_auth    (url));
+  STRING_ASSERT("subdomain.host.com:8080",    url_get_hostname(url));
+  STRING_ASSERT("subdomain.host.com",         url_get_host    (url));
+  STRING_ASSERT("/p/a/t/h",                   url_get_pathname(url));
+  STRING_ASSERT("/p/a/t/h?query=string#hash", url_get_path    (url));
+  STRING_ASSERT("?query=string",              url_get_search  (url));
+  STRING_ASSERT("query=string",               url_get_query   (url));
+  STRING_ASSERT("#hash",                      url_get_hash    (url));
+  STRING_ASSERT("8080",                       url_get_port    (url));
 
-  assert(0 == strcmp("git",               url_get_protocol(gh_url)));
-  assert(0 == strcmp("github.com",        url_get_host(gh_url)));
-  assert(0 == strcmp("github.com",        url_get_hostname(gh_url)));
-  assert(0 == strcmp("git",               url_get_auth(gh_url)));
-  assert(0 == strcmp("jwerle/url.h.git",  url_get_pathname(gh_url)));
-  assert(0 == strcmp("jwerle/url.h.git",  url_get_path(gh_url)));
+  STRING_ASSERT("git",               url_get_protocol(gh_url));
+  STRING_ASSERT("github.com",        url_get_host    (gh_url));
+  STRING_ASSERT("github.com",        url_get_hostname(gh_url));
+  STRING_ASSERT("git",               url_get_auth    (gh_url));
+  STRING_ASSERT("jwerle/url.h.git",  url_get_pathname(gh_url));
+  STRING_ASSERT("jwerle/url.h.git",  url_get_path    (gh_url));
 
   url_free(parsed);
+  url_free(gh_parsed);
 
   return 0;
 }
