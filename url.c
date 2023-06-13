@@ -43,8 +43,8 @@ strdup (const char *str) {
 
 
 static char *
-strff (char *ptr, int n) {
-  for (int i = 0; i < n; ++i) {
+strff (char *ptr, size_t n) {
+  for (size_t i = 0; i < n; ++i) {
     (void) *ptr++;
   }
 
@@ -52,8 +52,8 @@ strff (char *ptr, int n) {
 }
 
 static char *
-strrwd (char *ptr, int n) {
-  for (int i = 0; i < n; ++i) {
+strrwd (char *ptr, size_t n) {
+  for (size_t i = 0; i < n; ++i) {
     (void) *ptr--;
   }
 
@@ -111,7 +111,7 @@ url_parse (char *url) {
     return NULL;
   }
   // length of protocol plus ://
-  int protocol_len = (int) strlen(protocol) + 3;
+  const size_t protocol_len = strlen(protocol) + 3;
   data->protocol = protocol;
 
   is_ssh = url_is_ssh(protocol);
@@ -126,9 +126,7 @@ url_parse (char *url) {
 
   data->auth = auth;
 
-  char *hostname;
-
-  hostname = (is_ssh)
+  char *hostnamec = (is_ssh)
     ? get_part(tmp_url, "%[^:]", protocol_len + auth_len)
     : get_part(tmp_url, "%[^/]", protocol_len + auth_len);
 
@@ -137,11 +135,11 @@ url_parse (char *url) {
     url_free(data);
     return NULL;
   }
-  int hostname_len = (int) strlen(hostname);
+  const size_t hostname_len = strlen(hostname);
   char *tmp_hostname = strdup(hostname);
   data->hostname = hostname;
 
-  char *host = (char *) malloc((strlen(tmp_hostname)+1) * sizeof(char));
+  char *host = (char *) malloc((strlen(tmp_hostname)+1));
   sscanf(tmp_hostname, "%[^:]", host);
   free(tmp_hostname);
   if (!host) {
@@ -151,16 +149,14 @@ url_parse (char *url) {
   }
   data->host = host;
 
-  int host_len = (int)strlen(host);
+  const size_t host_len = strlen(host);
   if (hostname_len > host_len) {
     data->port = strff(hostname, host_len + 1); // +1 for ':' char;
   } else {
     data->port = NULL;
   }
 
-  char *tmp_path;
-
-  tmp_path = (is_ssh)
+  char *tmp_path = (is_ssh)
     ? get_part(tmp_url, ":%s", protocol_len + auth_len + hostname_len)
     : get_part(tmp_url, "/%s", protocol_len + auth_len + hostname_len);
 
@@ -184,7 +180,7 @@ url_parse (char *url) {
   strcat(pathname, "");
   tmp_path = strdup(path);
   sscanf(tmp_path, "%[^? | ^#]", pathname);
-  int pathname_len = (int)strlen(pathname);
+  const size_t pathname_len = strlen(pathname);
   data->pathname = pathname;
 
   char *search = (char *) malloc(sizeof(search));
@@ -199,7 +195,7 @@ url_parse (char *url) {
   strcpy(search, "");
   sscanf(tmp_path, "%[^#]", search);
   data->search = search;
-  int search_len = (int)strlen(search);
+  const search_len = strlen(search);
   free(tmp_path);
 
   char *query = (char *) malloc(sizeof(char));
@@ -229,9 +225,9 @@ url_parse (char *url) {
 
 bool
 url_is_protocol (char *str) {
-  int count = sizeof(URL_SCHEMES) / sizeof(URL_SCHEMES[0]);
+  const unsigned count = sizeof(URL_SCHEMES) / sizeof(URL_SCHEMES[0]);
 
-  for (int i = 0; i < count; ++i) {
+  for (unsigned i = 0; i < count; ++i) {
     if (0 == strcmp(URL_SCHEMES[i], str)) {
       return true;
     }
@@ -267,13 +263,13 @@ char *
 url_get_auth (char *url) {
   char *protocol = url_get_protocol(url);
   if (!protocol) return NULL;
-  int l = (int) strlen(protocol) + 3;
+  const size_t l = strlen(protocol) + 3;
   return get_part(url, "%[^@]", l);
 }
 
 char *
 url_get_hostname (char *url) {
-  int l = 3;
+  size_t l = 3;
   char *protocol = url_get_protocol(url);
   char *tmp_protocol = strdup(protocol);
   char *auth = url_get_auth(url);
@@ -282,7 +278,7 @@ url_get_hostname (char *url) {
   if (auth) l += strlen(auth) + 1; // add one @ symbol
   if (auth) free(auth);
 
-  l += (int) strlen(protocol);
+  l += strlen(protocol);
 
   free(protocol);
 
@@ -324,7 +320,7 @@ url_get_pathname (char *url) {
 
 char *
 url_get_path (char *url) {
-  int l = 3;
+  size_t l = 3;
   char *tmp_path;
   char *protocol = url_get_protocol(url);
   char *auth = url_get_auth(url);
@@ -336,9 +332,9 @@ url_get_path (char *url) {
 
   bool is_ssh = url_is_ssh(protocol);
 
-  l += (int) strlen(protocol) + (int) strlen(hostname);
+  l += strlen(protocol) + strlen(hostname);
 
-  if (auth) l+= (int) strlen(auth) +1; // @ symbol
+  if (auth) l+= strlen(auth) +1; // @ symbol
 
   tmp_path = (is_ssh)
     ? get_part(url, ":%s", l)
@@ -354,7 +350,6 @@ url_get_path (char *url) {
   free(tmp_path);
 
   return path;
-
 }
 
 char *
@@ -399,8 +394,8 @@ url_get_hash (char *url) {
   if (!pathname) return NULL;
   char *search = url_get_search(url);
 
-  int pathname_len = (int) strlen(pathname);
-  int search_len = (int) strlen(search);
+  const size_t pathname_len = strlen(pathname);
+  const size_t search_len   = strlen(search);
   char *tmp_path = strff(path, pathname_len + search_len);
 
   strcat(hash, "");
