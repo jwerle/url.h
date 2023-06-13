@@ -275,8 +275,10 @@ url_get_hostname (char *url) {
   char *auth = url_get_auth(url);
 
   if (!protocol) return NULL;
-  if (auth) l += strlen(auth) + 1; // add one @ symbol
-  if (auth) free(auth);
+  if (auth) {
+    l += strlen(auth) + 1; // add one @ symbol
+    free(auth);
+  }
 
   l += strlen(protocol);
 
@@ -344,7 +346,7 @@ url_get_path (char *url) {
   char *path = (char *) malloc(strlen(tmp_path));
   sprintf(path, fmt, tmp_path);
 
-  if (auth) free(auth);
+  free(auth);
   free(protocol);
   free(hostname);
   free(tmp_path);
@@ -404,7 +406,7 @@ url_get_hash (char *url) {
   free(tmp_path);
   free(pathname);
   free(path);
-  if (search) free(search);
+  free(search);
 
   return hash;
 }
@@ -449,15 +451,15 @@ url_data_inspect (url_data_t *data) {
 void
 url_free (url_data_t *data) {
   if (!data) return;
-  if (data->auth) free(data->auth);
-  if (data->protocol) free(data->protocol);
-  if (data->hostname) free(data->hostname);
-  if (data->host) free(data->host);
-  if (data->pathname) free(data->pathname);
-  if (data->path) free(data->path);
-  if (data->hash) free(data->hash);
-  if (data->port) free(data->port);
-  if (data->search) free(data->search);
-  if (data->query) free(data->query);
+  free(data->auth);
+  free(data->protocol);
+  free(data->hostname);
+  free(data->host);
+  free(data->pathname);
+  free(data->path);
+  free(data->hash);
+  free(data->port);
+  free(data->search);
+  free(data->query);
   free(data);
 }
