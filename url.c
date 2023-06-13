@@ -255,6 +255,7 @@ url_get_protocol (char *url) {
   if (!protocol) return NULL;
   sscanf(url, "%[^://]", protocol);
   if (url_is_protocol(protocol)) return protocol;
+  free(protocol);
   return NULL;
 }
 
@@ -264,6 +265,7 @@ url_get_auth (char *url) {
   char *protocol = url_get_protocol(url);
   if (!protocol) return NULL;
   const size_t l = strlen(protocol) + 3;
+  free(protocol);
   return get_part(url, "%[^@]", l);
 }
 
@@ -358,15 +360,11 @@ char *
 url_get_search (char *url) {
   char *path = url_get_path(url);
   char *pathname = url_get_pathname(url);
-  char *search = (char *) malloc(sizeof(char));
 
-  if (!path || !search) return NULL;
+  if (!path) return NULL;
 
-  char *tmp_path = strff(path, (int)strlen(pathname));
-  strcat(search, "");
-  sscanf(tmp_path, "%[^#]", search);
-
-  tmp_path = strrwd(tmp_path, (int)strlen(pathname));
+  char *search = NULL;
+  sscanf(path + strlen(pathname), "%m[^#]", &search);
 
   free(path);
   free(pathname);
@@ -377,32 +375,34 @@ url_get_search (char *url) {
 char *
 url_get_query (char *url) {
   char *search = url_get_search(url);
-  char *query = (char *) malloc(sizeof(char));
+  char *query = NULL;
   if (!search) return NULL;
-  sscanf(search, "?%s", query);
+
+  sscanf(search, "?%ms", &query);
   free(search);
   return query;
 }
 
 char *
 url_get_hash (char *url) {
-  char *hash = (char *) malloc(sizeof(char));
-  if (!hash) return NULL;
-
   char *path = url_get_path(url);
   if (!path) return NULL;
 
   char *pathname = url_get_pathname(url);
-  if (!pathname) return NULL;
+  if (!pathname) {
+    free(path);
+    return NULL;
+  }
+  
   char *search = url_get_search(url);
 
   const size_t pathname_len = strlen(pathname);
   const size_t search_len   = strlen(search);
   char *tmp_path = strff(path, pathname_len + search_len);
 
-  strcat(hash, "");
-  sscanf(tmp_path, "%s", hash);
-  tmp_path = strrwd(tmp_path, pathname_len + search_len);
+  char* hash = NULL;
+  sscanf(tmp_path, "%ms", &hash);
+//  tmp_path = strrwd(tmp_path, pathname_len + search_len);
   free(tmp_path);
   free(pathname);
   free(path);
