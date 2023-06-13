@@ -164,7 +164,7 @@ url_parse (char *url) {
     ? get_part(tmp_url, ":%s", protocol_len + auth_len + hostname_len)
     : get_part(tmp_url, "/%s", protocol_len + auth_len + hostname_len);
 
-  char *path = (char *) malloc((strlen(tmp_path) + 2) * sizeof(char));
+  char *path = (char *) malloc((strlen(tmp_path) + 2));
   if (!path) {
     free(tmp_url);
     url_free(data);
@@ -174,7 +174,7 @@ url_parse (char *url) {
   sprintf(path, fmt, tmp_path);
   data->path = path;
 
-  char *pathname = (char *) malloc((strlen(tmp_path) + 2) * sizeof(char));
+  char *pathname = (char *) malloc((strlen(tmp_path) + 2));
   free(tmp_path);
   if (!pathname) {
     free(tmp_url);
@@ -255,7 +255,7 @@ url_is_ssh (char *str) {
 
 char *
 url_get_protocol (char *url) {
-  char *protocol = (char *) malloc(URL_PROTOCOL_MAX_LENGTH * sizeof(char));
+  char *protocol = (char *) malloc(URL_PROTOCOL_MAX_LENGTH);
   if (!protocol) return NULL;
   sscanf(url, "%[^://]", protocol);
   if (url_is_protocol(protocol)) return protocol;
@@ -345,7 +345,7 @@ url_get_path (char *url) {
     : get_part(url, "/%s", l);
 
   const char *fmt = (is_ssh)? "%s" : "/%s";
-  char *path = (char *) malloc(strlen(tmp_path) * sizeof(char));
+  char *path = (char *) malloc(strlen(tmp_path));
   sprintf(path, fmt, tmp_path);
 
   if (auth) free(auth);
