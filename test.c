@@ -6,6 +6,7 @@
 #define STRING_ASSERT(expect, str) \
 	do{  \
 		char* s = str; \
+		assert( s ); \
 		assert( strcmp(expect, s) == 0); \
 		free(s); \
 	}while(0)

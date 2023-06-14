@@ -426,20 +426,27 @@ url_inspect (char *url) {
 }
 
 
+#define PRINT_MEMBER(member)  do{ \
+	if(data->member) \
+		printf("    ." #member ": \"%s\"\n", data->member);  \
+	else   \
+		printf("    ." #member ": (NULL)\n");  \
+	}while(0)
+
 void
 url_data_inspect (url_data_t *data) {
   printf("#url =>\n");
-  printf("    .href: \"%s\"\n",     data->href);
-  printf("    .protocol: \"%s\"\n", data->protocol);
-  printf("    .host: \"%s\"\n",     data->host);
-  printf("    .auth: \"%s\"\n",     data->auth);
-  printf("    .hostname: \"%s\"\n", data->hostname);
-  printf("    .pathname: \"%s\"\n", data->pathname);
-  printf("    .search: \"%s\"\n",   data->search);
-  printf("    .path: \"%s\"\n",     data->path);
-  printf("    .hash: \"%s\"\n",     data->hash);
-  printf("    .query: \"%s\"\n",    data->query);
-  printf("    .port: \"%s\"\n",     data->port);
+  PRINT_MEMBER(href);
+  PRINT_MEMBER(protocol);
+  PRINT_MEMBER(host);
+  PRINT_MEMBER(auth);
+  PRINT_MEMBER(hostname);
+  PRINT_MEMBER(pathname);
+  PRINT_MEMBER(search);
+  PRINT_MEMBER(path);
+  PRINT_MEMBER(hash);
+  PRINT_MEMBER(query);
+  PRINT_MEMBER(port);
 }
 
 void
