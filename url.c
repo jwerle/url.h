@@ -103,7 +103,6 @@ url_parse (char *url) {
 
   data->href = url;
   char *tmp_url = strdup(url);
-  bool is_ssh = false;
 
   char *protocol = url_get_protocol(tmp_url);
   if (!protocol) {
@@ -114,17 +113,14 @@ url_parse (char *url) {
   const size_t protocol_len = strlen(protocol) + 3;
   data->protocol = protocol;
 
-  is_ssh = url_is_ssh(protocol);
+  const bool is_ssh = url_is_ssh(protocol);
 
-  char *auth = (char *) malloc(sizeof(char));
-  int auth_len = 0;
+  size_t auth_len = 0;
   if (strstr(tmp_url, "@")) {
-    auth = get_part(tmp_url, "%[^@]", protocol_len);
-    auth_len = strlen(auth);
-    if (auth) auth_len++;
+    data->auth = get_part(tmp_url, "%[^@]", protocol_len);
+    auth_len = strlen(data->auth);
+    if (data->auth) auth_len++;
   }
-
-  data->auth = auth;
 
   char *hostname = (is_ssh)
     ? get_part(tmp_url, "%[^:]", protocol_len + auth_len)
@@ -255,6 +251,7 @@ url_get_protocol (char *url) {
   if (!protocol) return NULL;
   sscanf(url, "%[^://]", protocol);
   if (url_is_protocol(protocol)) return protocol;
+  free(protocol);
   return NULL;
 }
 
@@ -264,6 +261,7 @@ url_get_auth (char *url) {
   char *protocol = url_get_protocol(url);
   if (!protocol) return NULL;
   const size_t l = strlen(protocol) + 3;
+  free(protocol);
   return get_part(url, "%[^@]", l);
 }
 
@@ -293,12 +291,12 @@ url_get_hostname (char *url) {
 
 char *
 url_get_host (char *url) {
-  char *host = (char *) malloc(sizeof(char));
+  char *host = NULL;
   char *hostname = url_get_hostname(url);
 
-  if (!host || !hostname) return NULL;
+  if (!hostname) return NULL;
 
-  sscanf(hostname, "%[^:]", host);
+  sscanf(hostname, "%m[^:]", &host);
 
   free(hostname);
 
@@ -358,15 +356,11 @@ char *
 url_get_search (char *url) {
   char *path = url_get_path(url);
   char *pathname = url_get_pathname(url);
-  char *search = (char *) malloc(sizeof(char));
 
-  if (!path || !search) return NULL;
+  if (!path) return NULL;
 
-  char *tmp_path = strff(path, (int)strlen(pathname));
-  strcat(search, "");
-  sscanf(tmp_path, "%[^#]", search);
-
-  tmp_path = strrwd(tmp_path, (int)strlen(pathname));
+  char *search = NULL;
+  sscanf(path + strlen(pathname), "%m[^#]", &search);
 
   free(path);
   free(pathname);
@@ -377,32 +371,34 @@ url_get_search (char *url) {
 char *
 url_get_query (char *url) {
   char *search = url_get_search(url);
-  char *query = (char *) malloc(sizeof(char));
+  char *query = NULL;
   if (!search) return NULL;
-  sscanf(search, "?%s", query);
+
+  sscanf(search, "?%ms", &query);
   free(search);
   return query;
 }
 
 char *
 url_get_hash (char *url) {
-  char *hash = (char *) malloc(sizeof(char));
-  if (!hash) return NULL;
-
   char *path = url_get_path(url);
   if (!path) return NULL;
 
   char *pathname = url_get_pathname(url);
-  if (!pathname) return NULL;
+  if (!pathname) {
+    free(path);
+    return NULL;
+  }
+  
   char *search = url_get_search(url);
 
   const size_t pathname_len = strlen(pathname);
   const size_t search_len   = strlen(search);
   char *tmp_path = strff(path, pathname_len + search_len);
 
-  strcat(hash, "");
-  sscanf(tmp_path, "%s", hash);
-  tmp_path = strrwd(tmp_path, pathname_len + search_len);
+  char* hash = NULL;
+  sscanf(tmp_path, "%ms", &hash);
+//  tmp_path = strrwd(tmp_path, pathname_len + search_len);
   free(tmp_path);
   free(pathname);
   free(path);
@@ -413,16 +409,14 @@ url_get_hash (char *url) {
 
 char *
 url_get_port (char *url) {
-  char *port = (char *) malloc(sizeof(char));
+  char *port = NULL;
   char *hostname = url_get_hostname(url);
   char *host = url_get_host(url);
-  if (!port || !hostname) return NULL;
+  if (!hostname) return NULL;
 
-  char *tmp_hostname = strff(hostname, strlen(host) +1);
-  sscanf(tmp_hostname, "%s", port);
-
+  sscanf(hostname + strlen(host) + 1, "%ms", &port);
   free(hostname);
-  free(tmp_hostname);
+  free(host);
   return port;
 }
 
@@ -432,20 +426,27 @@ url_inspect (char *url) {
 }
 
 
+#define PRINT_MEMBER(member)  do{ \
+	if(data->member) \
+		printf("    ." #member ": \"%s\"\n", data->member);  \
+	else   \
+		printf("    ." #member ": (NULL)\n");  \
+	}while(0)
+
 void
 url_data_inspect (url_data_t *data) {
   printf("#url =>\n");
-  printf("    .href: \"%s\"\n",     data->href);
-  printf("    .protocol: \"%s\"\n", data->protocol);
-  printf("    .host: \"%s\"\n",     data->host);
-  printf("    .auth: \"%s\"\n",     data->auth);
-  printf("    .hostname: \"%s\"\n", data->hostname);
-  printf("    .pathname: \"%s\"\n", data->pathname);
-  printf("    .search: \"%s\"\n",   data->search);
-  printf("    .path: \"%s\"\n",     data->path);
-  printf("    .hash: \"%s\"\n",     data->hash);
-  printf("    .query: \"%s\"\n",    data->query);
-  printf("    .port: \"%s\"\n",     data->port);
+  PRINT_MEMBER(href);
+  PRINT_MEMBER(protocol);
+  PRINT_MEMBER(host);
+  PRINT_MEMBER(auth);
+  PRINT_MEMBER(hostname);
+  PRINT_MEMBER(pathname);
+  PRINT_MEMBER(search);
+  PRINT_MEMBER(path);
+  PRINT_MEMBER(hash);
+  PRINT_MEMBER(query);
+  PRINT_MEMBER(port);
 }
 
 void
