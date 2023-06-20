@@ -66,7 +66,7 @@ get_part (char *url, const char *format, int l) {
   char *tmp = strdup(url);
   char *tmp_url = strdup(url);
   char *fmt_url = strdup(url);
-  char *ret;
+  char *ret = NULL;
 
   if (!tmp || !tmp_url || !fmt_url)
     return NULL;
@@ -98,7 +98,7 @@ get_part (char *url, const char *format, int l) {
 
 url_data_t *
 url_parse (char *url) {
-  url_data_t *data = (url_data_t *) malloc(sizeof(url_data_t));
+  url_data_t *data = (url_data_t *) calloc(1, sizeof(url_data_t));
   if (!data) return NULL;
 
   data->href = url;
@@ -107,6 +107,7 @@ url_parse (char *url) {
   char *protocol = url_get_protocol(tmp_url);
   if (!protocol) {
     free(tmp_url);
+    free(data);
     return NULL;
   }
   // length of protocol plus ://
@@ -179,39 +180,25 @@ url_parse (char *url) {
   const size_t pathname_len = strlen(pathname);
   data->pathname = pathname;
 
-  char *search = (char *) malloc(sizeof(search));
-  if (!search) {
-    free(tmp_url);
-    url_free(data);
-    return NULL;
-  }
   char* tmp_path_new = strff(tmp_path, pathname_len);
   free(tmp_path);
   tmp_path = tmp_path_new;
-  strcpy(search, "");
-  sscanf(tmp_path, "%[^#]", search);
+  char* search = NULL;
+  sscanf(tmp_path, "%m[^#]", &search);
   data->search = search;
-  const size_t search_len = strlen(search);
+
+  const size_t search_len = search ? strlen(search) : 0;
   free(tmp_path);
 
-  char *query = (char *) malloc(sizeof(char));
-  if (!query) {
-    free(tmp_url);
-    url_free(data);
-    return NULL;
+  if(search) {
+    char* query = NULL;
+    sscanf(search, "?%ms", &query);
+    data->query = query;
   }
-  sscanf(search, "?%s", query);
-  data->query = query;
 
-  char *hash = (char *) malloc(sizeof(char));
-  if (!hash) {
-    free(tmp_url);
-    url_free(data);
-    return NULL;
-  }
+  char* hash = NULL;
   tmp_path = strff(path, pathname_len + search_len);
-  strcat(hash, "");
-  sscanf(tmp_path, "%s", hash);
+  sscanf(tmp_path, "%ms", &hash);
   data->hash = hash;
   free(tmp_path);
   free(tmp_url);
@@ -306,12 +293,11 @@ url_get_host (char *url) {
 char *
 url_get_pathname (char *url) {
   char *path = url_get_path(url);
-  char *pathname = (char *) malloc(sizeof(char));
+  char *pathname = NULL;
 
-  if (!path || !pathname) return NULL;
+  if (!path) return NULL;
 
-  strcat(pathname, "");
-  sscanf(path, "%[^?]", pathname);
+  sscanf(path, "%m[^?]", &pathname);
 
   free(path);
 
@@ -321,22 +307,21 @@ url_get_pathname (char *url) {
 char *
 url_get_path (char *url) {
   size_t l = 3;
-  char *tmp_path;
   char *protocol = url_get_protocol(url);
-  char *auth = url_get_auth(url);
+  char *auth     = url_get_auth(url);
   char *hostname = url_get_hostname(url);
 
 
   if (!protocol || !hostname)
     return NULL;
 
-  bool is_ssh = url_is_ssh(protocol);
+  const bool is_ssh = url_is_ssh(protocol);
 
   l += strlen(protocol) + strlen(hostname);
 
   if (auth) l+= strlen(auth) +1; // @ symbol
 
-  tmp_path = (is_ssh)
+  char* tmp_path = (is_ssh)
     ? get_part(url, ":%s", l)
     : get_part(url, "/%s", l);
 
