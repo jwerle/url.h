@@ -43,7 +43,7 @@ strdup (const char *str) {
 
 
 static char *
-strff (char *ptr, size_t n) {
+strff (const char* ptr, size_t n) {
   for (size_t i = 0; i < n; ++i) {
     (void) *ptr++;
   }
@@ -51,17 +51,9 @@ strff (char *ptr, size_t n) {
   return strdup(ptr);
 }
 
-static char *
-strrwd (char *ptr, size_t n) {
-  for (size_t i = 0; i < n; ++i) {
-    (void) *ptr--;
-  }
-
-  return strdup(ptr);
-}
 
 static char *
-get_part (char *url, const char *format, int l) {
+get_part (const char* url, const char *format, int l) {
   bool has = false;
   char *tmp = strdup(url);
   char *tmp_url = strdup(url);
@@ -96,8 +88,8 @@ get_part (char *url, const char *format, int l) {
   return has? ret : NULL;
 }
 
-url_data_t *
-url_parse (char *url) {
+url_data_t*
+url_parse (char* url) {
   url_data_t *data = (url_data_t *) calloc(1, sizeof(url_data_t));
   if (!data) return NULL;
 
@@ -207,7 +199,7 @@ url_parse (char *url) {
 }
 
 bool
-url_is_protocol (char *str) {
+url_is_protocol (const char* str) {
   const unsigned count = sizeof(URL_SCHEMES) / sizeof(URL_SCHEMES[0]);
 
   for (unsigned i = 0; i < count; ++i) {
@@ -220,31 +212,28 @@ url_is_protocol (char *str) {
 }
 
 bool
-url_is_ssh (char *str) {
-  str = strdup(str);
+url_is_ssh (const char* str) {
   if (0 == strcmp(str, "ssh") || 0 == strcmp(str, "git")) {
-    free(str);
     return true;
-
   }
-  free(str);
-
   return false;
 }
 
 char *
-url_get_protocol (char *url) {
+url_get_protocol (const char* url) {
   char *protocol = (char *) malloc(URL_PROTOCOL_MAX_LENGTH);
   if (!protocol) return NULL;
+
   sscanf(url, "%[^://]", protocol);
   if (url_is_protocol(protocol)) return protocol;
+
   free(protocol);
   return NULL;
 }
 
 
 char *
-url_get_auth (char *url) {
+url_get_auth (const char* url) {
   char *protocol = url_get_protocol(url);
   if (!protocol) return NULL;
   const size_t l = strlen(protocol) + 3;
@@ -253,7 +242,7 @@ url_get_auth (char *url) {
 }
 
 char *
-url_get_hostname (char *url) {
+url_get_hostname (const char* url) {
   size_t l = 3;
   char *protocol = url_get_protocol(url);
   char *tmp_protocol = strdup(protocol);
@@ -277,7 +266,7 @@ url_get_hostname (char *url) {
 }
 
 char *
-url_get_host (char *url) {
+url_get_host (const char* url) {
   char *host = NULL;
   char *hostname = url_get_hostname(url);
 
@@ -291,7 +280,7 @@ url_get_host (char *url) {
 }
 
 char *
-url_get_pathname (char *url) {
+url_get_pathname (const char* url) {
   char *path = url_get_path(url);
   char *pathname = NULL;
 
@@ -305,7 +294,7 @@ url_get_pathname (char *url) {
 }
 
 char *
-url_get_path (char *url) {
+url_get_path (const char* url) {
   size_t l = 3;
   char *protocol = url_get_protocol(url);
   char *auth     = url_get_auth(url);
@@ -338,7 +327,7 @@ url_get_path (char *url) {
 }
 
 char *
-url_get_search (char *url) {
+url_get_search (const char* url) {
   char *path = url_get_path(url);
   char *pathname = url_get_pathname(url);
 
@@ -354,7 +343,7 @@ url_get_search (char *url) {
 }
 
 char *
-url_get_query (char *url) {
+url_get_query (const char* url) {
   char *search = url_get_search(url);
   char *query = NULL;
   if (!search) return NULL;
@@ -365,7 +354,7 @@ url_get_query (char *url) {
 }
 
 char *
-url_get_hash (char *url) {
+url_get_hash (const char* url) {
   char *path = url_get_path(url);
   if (!path) return NULL;
 
@@ -393,7 +382,7 @@ url_get_hash (char *url) {
 }
 
 char *
-url_get_port (char *url) {
+url_get_port (const char* url) {
   char *port = NULL;
   char *hostname = url_get_hostname(url);
   char *host = url_get_host(url);
@@ -406,7 +395,7 @@ url_get_port (char *url) {
 }
 
 void
-url_inspect (char *url) {
+url_inspect (char* url) {
   url_data_inspect(url_parse(url));
 }
 
@@ -419,7 +408,7 @@ url_inspect (char *url) {
 	}while(0)
 
 void
-url_data_inspect (url_data_t *data) {
+url_data_inspect (const url_data_t* data) {
   printf("#url =>\n");
   PRINT_MEMBER(href);
   PRINT_MEMBER(protocol);
