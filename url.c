@@ -326,7 +326,7 @@ url_get_path (char *url) {
     : get_part(url, "/%s", l);
 
   const char *fmt = (is_ssh)? "%s" : "/%s";
-  char *path = (char *) malloc(strlen(tmp_path));
+  char *path = (char *) malloc(strlen(tmp_path)+2);
   sprintf(path, fmt, tmp_path);
 
   free(auth);
