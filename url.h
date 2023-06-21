@@ -20,7 +20,7 @@
  * Max length of a url protocol scheme
  */
 
-#define URL_PROTOCOL_MAX_LENGTH 16
+#define URL_PROTOCOL_MAX_LENGTH 32
 
 
 /**
