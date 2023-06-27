@@ -13,7 +13,7 @@
  * url.h version
  */
 
-#define URL_VERSION 0.2.1
+#define URL_VERSION 0.3.0
 
 
 /**
@@ -48,19 +48,15 @@
  * `url_data` struct that defines parts
  * of a parsed URL such as host and protocol
  */
-
 typedef struct url_data {
-  char *href;
-  char *protocol;
-  char *host;
-  char *auth;
-  char *hostname;
-  char *pathname;
-  char *search;
-  char *path;
-  char *hash;
-  char *query;
-  char *port;
+  const char* whole_url;
+  const char* protocol; // URL scheme
+  const char* auth;  // can be NULL
+  const char* host;
+  const char* port;  // can be NULL
+  const char* path;
+  const char* query; // can be NULL
+  const char* fragment;  // can be NULL
 } url_data_t;
 
 
@@ -70,54 +66,62 @@ typedef struct url_data {
  * Parses a url into parts and returns
  * a `url_data_t *` pointer
  */
-
 url_data_t *
-url_parse (char* url);
+url_parse (const char* url);
 
+// Parses url, returns the protocol (a.k.a. URL "scheme") of the URL.
+// Caller must free() the returned string.
 char *
 url_get_protocol (const char* url);
 
+// Parses url, returns "username:password" of the URL if present or NULL.
+// Caller must free() the returned string.
 char *
 url_get_auth (const char* url);
 
+// Parses url, returns the hostname of the URL.
+// Caller must free() the returned string.
 char *
 url_get_hostname (const char* url);
 
-char *
-url_get_host (const char* url);
-
-char *
-url_get_pathname (const char* url);
-
+// Parses url, returns the path of the URL.
+// Caller must free() the returned string.
 char *
 url_get_path (const char* url);
 
-char *
-url_get_search (const char* url);
-
+// Parses url, returns the query string (afterthe "?") of the URL if present or NULL.
+// Caller must free() the returned string.
 char *
 url_get_query (const char* url);
 
+// Parses url, returns the fragment (after the "#") of the URL if present or NULL.
+// Caller must free() the returned string.
 char *
 url_get_hash (const char* url);
 
+// Parses url, returns the port of the URL if present or NULL.
+// Caller must free() the returned string.
 char *
 url_get_port (const char* url);
 
+// Frees the data and its members appropiately.
 void
 url_free (url_data_t* data);
 
+// Returns 'true' if the str is the name of a well-known URL scheme.
 bool
 url_is_protocol (const char* str);
 
+// Returns 'true' if the string is "ssh" or "git"
 bool
 url_is_ssh (const char* str);
 
+// Parses the URL and prints its members to stdout.
 void
-url_inspect (char* url);
+url_inspect (const char* url);
 
+// Prints the members to stdout.
 void
 url_data_inspect (const url_data_t* data);
-
 
 #endif
