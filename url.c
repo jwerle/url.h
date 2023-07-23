@@ -1,6 +1,9 @@
 #include <string.h>
 #include "url.h"
 
+#include "url_char_category.h"
+#include "url_char_category_table.h"
+
 /**
  * URI Schemes
  * http://en.wikipedia.org/wiki/URI_scheme
@@ -33,7 +36,7 @@ static const char *URL_SCHEMES[] = {
 #if __POSIX_C_SOURCE__ < 200809L
 char *
 strdup (const char *str) {
-  int n = strlen(str) + 1;
+  const int n = strlen(str) + 1;
   char *dup = (char *) malloc(n);
   if (dup) strcpy(dup, str);
   return dup;
@@ -49,6 +52,23 @@ strff (const char* ptr, size_t n) {
   }
 
   return strdup(ptr);
+}
+
+
+static char*
+scan_part(char* start, enum Category category, char delimiter) {
+  const char* p = start;
+  for(;;)
+  {
+    if( *p=='\0' || *p==delimiter)
+       return p; // success! :-)
+    
+    if(char_cat[ (unsigned char) *p ] & category !=0) {
+      ++p;
+    }else{
+      return NULL; // illegal character in URL string -> Abort!
+    }
+  }
 }
 
 
@@ -88,44 +108,42 @@ get_part (const char* url, const char *format, int l) {
   return has? ret : NULL;
 }
 
+
 url_data_t*
-url_parse (char* url) {
+url_parse (const char* url) {
   url_data_t *data = (url_data_t *) calloc(1, sizeof(url_data_t));
   if (!data) return NULL;
 
-  data->href = url;
-  char *tmp_url = strdup(url);
+  char* p = strdup(url);
+  if(!p)
+    goto error;
+  
+  data->whole_url = p;
+  const char* p_end = p + strlen(p);
 
-  char *protocol = url_get_protocol(tmp_url);
-  if (!protocol) {
-    free(tmp_url);
-    free(data);
-    return NULL;
+  char* protocol_end = scan_part(p, Scheme, ':');
+  if (!protocol_end || *protocol_end=='\0')
+    goto error;
+
+  *protocol_end = '\0';
+  data->protocol = p;
+  p = protocol_end + 1;
+
+  const bool is_ssh = url_is_ssh(data->protocol);
+
+  char* userinfo_end = scan_part(p, Userinfo, '@');
+  if(userinfo_end && *userinfo_end == '@') { // userinfo found
+    userinfo_end = '\0';
+    data->userinfo = p;
+    p = userinfo_end + 1;
   }
-  // length of protocol plus ://
-  const size_t protocol_len = strlen(protocol) + 3;
-  data->protocol = protocol;
 
-  const bool is_ssh = url_is_ssh(protocol);
+  char* hostname_end = scan_part( p, Unreserved | SubDelim, (is_ssh ? ':' : '/') );
 
-  size_t auth_len = 0;
-  if (strstr(tmp_url, "@")) {
-    data->auth = get_part(tmp_url, "%[^@]", protocol_len);
-    auth_len = strlen(data->auth);
-    if (data->auth) auth_len++;
-  }
-
-  char *hostname = (is_ssh)
-    ? get_part(tmp_url, "%[^:]", protocol_len + auth_len)
-    : get_part(tmp_url, "%[^/]", protocol_len + auth_len);
-
-  if (!hostname) {
-    free(tmp_url);
-    url_free(data);
-    return NULL;
-  }
-  const size_t hostname_len = strlen(hostname);
-  char *tmp_hostname = strdup(hostname);
+  if (!hostname_end)
+    goto error;
+  
+  *hostname_end = '\0';
   data->hostname = hostname;
 
   char *host = (char *) malloc((strlen(tmp_hostname)+1));
@@ -196,7 +214,12 @@ url_parse (char* url) {
   free(tmp_url);
 
   return data;
+
+error:
+  url_free(data);
+  return NULL;
 }
+
 
 bool
 url_is_protocol (const char* str) {
