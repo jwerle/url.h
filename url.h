@@ -20,7 +20,7 @@
  * Max length of a url protocol scheme
  */
 
-#define URL_PROTOCOL_MAX_LENGTH 16
+#define URL_PROTOCOL_MAX_LENGTH 32
 
 
 /**
@@ -72,52 +72,52 @@ typedef struct url_data {
  */
 
 url_data_t *
-url_parse (char *url);
+url_parse (char* url);
 
 char *
-url_get_protocol (char *url);
+url_get_protocol (const char* url);
 
 char *
-url_get_auth (char *url);
+url_get_auth (const char* url);
 
 char *
-url_get_hostname (char *url);
+url_get_hostname (const char* url);
 
 char *
-url_get_host (char *url);
+url_get_host (const char* url);
 
 char *
-url_get_pathname (char *url);
+url_get_pathname (const char* url);
 
 char *
-url_get_path (char *url);
+url_get_path (const char* url);
 
 char *
-url_get_search (char *url);
+url_get_search (const char* url);
 
 char *
-url_get_query (char *url);
+url_get_query (const char* url);
 
 char *
-url_get_hash (char *url);
+url_get_hash (const char* url);
 
 char *
-url_get_port (char *url);
+url_get_port (const char* url);
 
 void
-url_free (url_data_t *data);
+url_free (url_data_t* data);
 
 bool
-url_is_protocol (char *str);
+url_is_protocol (const char* str);
 
 bool
-url_is_ssh (char *str);
+url_is_ssh (const char* str);
 
 void
-url_inspect (char *url);
+url_inspect (char* url);
 
 void
-url_data_inspect (url_data_t *data);
+url_data_inspect (const url_data_t* data);
 
 
 #endif

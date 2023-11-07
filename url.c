@@ -43,7 +43,7 @@ strdup (const char *str) {
 
 
 static char *
-strff (char *ptr, size_t n) {
+strff (const char* ptr, size_t n) {
   for (size_t i = 0; i < n; ++i) {
     (void) *ptr++;
   }
@@ -51,25 +51,21 @@ strff (char *ptr, size_t n) {
   return strdup(ptr);
 }
 
-static char *
-strrwd (char *ptr, size_t n) {
-  for (size_t i = 0; i < n; ++i) {
-    (void) *ptr--;
-  }
-
-  return strdup(ptr);
-}
 
 static char *
-get_part (char *url, const char *format, int l) {
+get_part (const char* url, const char *format, int l) {
   bool has = false;
   char *tmp = strdup(url);
   char *tmp_url = strdup(url);
   char *fmt_url = strdup(url);
-  char *ret;
+  char *ret = NULL;
 
-  if (!tmp || !tmp_url || !fmt_url)
+  if (!tmp || !tmp_url || !fmt_url) {
+    free(tmp);
+    free(tmp_url);
+    free(fmt_url);
     return NULL;
+  }
 
   strcpy(tmp, "");
   strcpy(fmt_url, "");
@@ -96,35 +92,32 @@ get_part (char *url, const char *format, int l) {
   return has? ret : NULL;
 }
 
-url_data_t *
-url_parse (char *url) {
-  url_data_t *data = (url_data_t *) malloc(sizeof(url_data_t));
+url_data_t*
+url_parse (char* url) {
+  url_data_t *data = (url_data_t *) calloc(1, sizeof(url_data_t));
   if (!data) return NULL;
 
   data->href = url;
   char *tmp_url = strdup(url);
-  bool is_ssh = false;
 
   char *protocol = url_get_protocol(tmp_url);
   if (!protocol) {
     free(tmp_url);
+    free(data);
     return NULL;
   }
   // length of protocol plus ://
   const size_t protocol_len = strlen(protocol) + 3;
   data->protocol = protocol;
 
-  is_ssh = url_is_ssh(protocol);
+  const bool is_ssh = url_is_ssh(protocol);
 
-  char *auth = (char *) malloc(sizeof(char));
-  int auth_len = 0;
+  size_t auth_len = 0;
   if (strstr(tmp_url, "@")) {
-    auth = get_part(tmp_url, "%[^@]", protocol_len);
-    auth_len = strlen(auth);
-    if (auth) auth_len++;
+    data->auth = get_part(tmp_url, "%[^@]", protocol_len);
+    auth_len = strlen(data->auth);
+    if (data->auth) auth_len++;
   }
-
-  data->auth = auth;
 
   char *hostname = (is_ssh)
     ? get_part(tmp_url, "%[^:]", protocol_len + auth_len)
@@ -163,6 +156,7 @@ url_parse (char *url) {
   char *path = (char *) malloc((strlen(tmp_path) + 2));
   if (!path) {
     free(tmp_url);
+    free(tmp_path);
     url_free(data);
     return NULL;
   }
@@ -183,39 +177,25 @@ url_parse (char *url) {
   const size_t pathname_len = strlen(pathname);
   data->pathname = pathname;
 
-  char *search = (char *) malloc(sizeof(search));
-  if (!search) {
-    free(tmp_url);
-    url_free(data);
-    return NULL;
-  }
   char* tmp_path_new = strff(tmp_path, pathname_len);
   free(tmp_path);
   tmp_path = tmp_path_new;
-  strcpy(search, "");
-  sscanf(tmp_path, "%[^#]", search);
+  char* search = NULL;
+  sscanf(tmp_path, "%m[^#]", &search);
   data->search = search;
-  const size_t search_len = strlen(search);
+
+  const size_t search_len = search ? strlen(search) : 0;
   free(tmp_path);
 
-  char *query = (char *) malloc(sizeof(char));
-  if (!query) {
-    free(tmp_url);
-    url_free(data);
-    return NULL;
+  if(search) {
+    char* query = NULL;
+    sscanf(search, "?%ms", &query);
+    data->query = query;
   }
-  sscanf(search, "?%s", query);
-  data->query = query;
 
-  char *hash = (char *) malloc(sizeof(char));
-  if (!hash) {
-    free(tmp_url);
-    url_free(data);
-    return NULL;
-  }
+  char* hash = NULL;
   tmp_path = strff(path, pathname_len + search_len);
-  strcat(hash, "");
-  sscanf(tmp_path, "%s", hash);
+  sscanf(tmp_path, "%ms", &hash);
   data->hash = hash;
   free(tmp_path);
   free(tmp_url);
@@ -224,7 +204,7 @@ url_parse (char *url) {
 }
 
 bool
-url_is_protocol (char *str) {
+url_is_protocol (const char* str) {
   const unsigned count = sizeof(URL_SCHEMES) / sizeof(URL_SCHEMES[0]);
 
   for (unsigned i = 0; i < count; ++i) {
@@ -237,38 +217,37 @@ url_is_protocol (char *str) {
 }
 
 bool
-url_is_ssh (char *str) {
-  str = strdup(str);
+url_is_ssh (const char* str) {
   if (0 == strcmp(str, "ssh") || 0 == strcmp(str, "git")) {
-    free(str);
     return true;
-
   }
-  free(str);
-
   return false;
 }
 
 char *
-url_get_protocol (char *url) {
+url_get_protocol (const char* url) {
   char *protocol = (char *) malloc(URL_PROTOCOL_MAX_LENGTH);
   if (!protocol) return NULL;
+
   sscanf(url, "%[^://]", protocol);
   if (url_is_protocol(protocol)) return protocol;
+
+  free(protocol);
   return NULL;
 }
 
 
 char *
-url_get_auth (char *url) {
+url_get_auth (const char* url) {
   char *protocol = url_get_protocol(url);
   if (!protocol) return NULL;
   const size_t l = strlen(protocol) + 3;
+  free(protocol);
   return get_part(url, "%[^@]", l);
 }
 
 char *
-url_get_hostname (char *url) {
+url_get_hostname (const char* url) {
   size_t l = 3;
   char *protocol = url_get_protocol(url);
   char *tmp_protocol = strdup(protocol);
@@ -292,13 +271,13 @@ url_get_hostname (char *url) {
 }
 
 char *
-url_get_host (char *url) {
-  char *host = (char *) malloc(sizeof(char));
+url_get_host (const char* url) {
+  char *host = NULL;
   char *hostname = url_get_hostname(url);
 
-  if (!host || !hostname) return NULL;
+  if (!hostname) return NULL;
 
-  sscanf(hostname, "%[^:]", host);
+  sscanf(hostname, "%m[^:]", &host);
 
   free(hostname);
 
@@ -306,14 +285,13 @@ url_get_host (char *url) {
 }
 
 char *
-url_get_pathname (char *url) {
+url_get_pathname (const char* url) {
   char *path = url_get_path(url);
-  char *pathname = (char *) malloc(sizeof(char));
+  char *pathname = NULL;
 
-  if (!path || !pathname) return NULL;
+  if (!path) return NULL;
 
-  strcat(pathname, "");
-  sscanf(path, "%[^?]", pathname);
+  sscanf(path, "%m[^?]", &pathname);
 
   free(path);
 
@@ -321,29 +299,33 @@ url_get_pathname (char *url) {
 }
 
 char *
-url_get_path (char *url) {
+url_get_path (const char* url) {
   size_t l = 3;
-  char *tmp_path;
   char *protocol = url_get_protocol(url);
-  char *auth = url_get_auth(url);
+  char *auth     = url_get_auth(url);
   char *hostname = url_get_hostname(url);
 
 
   if (!protocol || !hostname)
+  {
+    free(protocol);
+    free(auth);
+    free(hostname);
     return NULL;
+  }
 
-  bool is_ssh = url_is_ssh(protocol);
+  const bool is_ssh = url_is_ssh(protocol);
 
   l += strlen(protocol) + strlen(hostname);
 
   if (auth) l+= strlen(auth) +1; // @ symbol
 
-  tmp_path = (is_ssh)
+  char* tmp_path = (is_ssh)
     ? get_part(url, ":%s", l)
     : get_part(url, "/%s", l);
 
   const char *fmt = (is_ssh)? "%s" : "/%s";
-  char *path = (char *) malloc(strlen(tmp_path));
+  char *path = (char *) malloc(strlen(tmp_path)+2);
   sprintf(path, fmt, tmp_path);
 
   free(auth);
@@ -355,18 +337,14 @@ url_get_path (char *url) {
 }
 
 char *
-url_get_search (char *url) {
+url_get_search (const char* url) {
   char *path = url_get_path(url);
   char *pathname = url_get_pathname(url);
-  char *search = (char *) malloc(sizeof(char));
 
-  if (!path || !search) return NULL;
+  if (!path) return NULL;
 
-  char *tmp_path = strff(path, (int)strlen(pathname));
-  strcat(search, "");
-  sscanf(tmp_path, "%[^#]", search);
-
-  tmp_path = strrwd(tmp_path, (int)strlen(pathname));
+  char *search = NULL;
+  sscanf(path + strlen(pathname), "%m[^#]", &search);
 
   free(path);
   free(pathname);
@@ -375,34 +353,36 @@ url_get_search (char *url) {
 }
 
 char *
-url_get_query (char *url) {
+url_get_query (const char* url) {
   char *search = url_get_search(url);
-  char *query = (char *) malloc(sizeof(char));
+  char *query = NULL;
   if (!search) return NULL;
-  sscanf(search, "?%s", query);
+
+  sscanf(search, "?%ms", &query);
   free(search);
   return query;
 }
 
 char *
-url_get_hash (char *url) {
-  char *hash = (char *) malloc(sizeof(char));
-  if (!hash) return NULL;
-
+url_get_hash (const char* url) {
   char *path = url_get_path(url);
   if (!path) return NULL;
 
   char *pathname = url_get_pathname(url);
-  if (!pathname) return NULL;
+  if (!pathname) {
+    free(path);
+    return NULL;
+  }
+  
   char *search = url_get_search(url);
 
   const size_t pathname_len = strlen(pathname);
   const size_t search_len   = strlen(search);
   char *tmp_path = strff(path, pathname_len + search_len);
 
-  strcat(hash, "");
-  sscanf(tmp_path, "%s", hash);
-  tmp_path = strrwd(tmp_path, pathname_len + search_len);
+  char* hash = NULL;
+  sscanf(tmp_path, "%ms", &hash);
+//  tmp_path = strrwd(tmp_path, pathname_len + search_len);
   free(tmp_path);
   free(pathname);
   free(path);
@@ -412,40 +392,45 @@ url_get_hash (char *url) {
 }
 
 char *
-url_get_port (char *url) {
-  char *port = (char *) malloc(sizeof(char));
+url_get_port (const char* url) {
+  char *port = NULL;
   char *hostname = url_get_hostname(url);
   char *host = url_get_host(url);
-  if (!port || !hostname) return NULL;
+  if (!hostname) return NULL;
 
-  char *tmp_hostname = strff(hostname, strlen(host) +1);
-  sscanf(tmp_hostname, "%s", port);
-
+  sscanf(hostname + strlen(host) + 1, "%ms", &port);
   free(hostname);
-  free(tmp_hostname);
+  free(host);
   return port;
 }
 
 void
-url_inspect (char *url) {
+url_inspect (char* url) {
   url_data_inspect(url_parse(url));
 }
 
 
+#define PRINT_MEMBER(member)  do{ \
+	if(data->member) \
+		printf("    ." #member ": \"%s\"\n", data->member);  \
+	else   \
+		printf("    ." #member ": (NULL)\n");  \
+	}while(0)
+
 void
-url_data_inspect (url_data_t *data) {
+url_data_inspect (const url_data_t* data) {
   printf("#url =>\n");
-  printf("    .href: \"%s\"\n",     data->href);
-  printf("    .protocol: \"%s\"\n", data->protocol);
-  printf("    .host: \"%s\"\n",     data->host);
-  printf("    .auth: \"%s\"\n",     data->auth);
-  printf("    .hostname: \"%s\"\n", data->hostname);
-  printf("    .pathname: \"%s\"\n", data->pathname);
-  printf("    .search: \"%s\"\n",   data->search);
-  printf("    .path: \"%s\"\n",     data->path);
-  printf("    .hash: \"%s\"\n",     data->hash);
-  printf("    .query: \"%s\"\n",    data->query);
-  printf("    .port: \"%s\"\n",     data->port);
+  PRINT_MEMBER(href);
+  PRINT_MEMBER(protocol);
+  PRINT_MEMBER(host);
+  PRINT_MEMBER(auth);
+  PRINT_MEMBER(hostname);
+  PRINT_MEMBER(pathname);
+  PRINT_MEMBER(search);
+  PRINT_MEMBER(path);
+  PRINT_MEMBER(hash);
+  PRINT_MEMBER(query);
+  PRINT_MEMBER(port);
 }
 
 void
