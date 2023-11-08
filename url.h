@@ -49,9 +49,9 @@
  * of a parsed URL such as host and protocol
  */
 typedef struct url_data {
-  const char* whole_url;
+  const char* whole_url; // holds the whole URL, but with '\0' to separae the parts of the URL
   const char* protocol; // URL scheme
-  const char* auth;  // can be NULL
+  const char* userinfo; // can be NULL
   const char* host;
   const char* port;  // can be NULL
   const char* path;
@@ -84,7 +84,7 @@ url_get_protocol (const char* url) { return url_get_scheme(url); }
 // Parses url, returns "username:password" of the URL if present or NULL.
 // Caller must free() the returned string if not NULL.
 char *
-url_get_auth (const char* url);
+url_get_userinfo (const char* url);
 
 // Parses url, returns the hostname of the URL.
 // Caller must free() the returned string.
