@@ -80,8 +80,12 @@ get_part (const char* url, const char *format, int l) {
   char *fmt_url = strdup(url);
   char *ret = NULL;
 
-  if (!tmp || !tmp_url || !fmt_url)
+  if (!tmp || !tmp_url || !fmt_url) {
+    free(tmp);
+    free(tmp_url);
+    free(fmt_url);
     return NULL;
+  }
 
   strcpy(tmp, "");
   strcpy(fmt_url, "");
@@ -170,6 +174,7 @@ url_parse (const char* url) {
   char *path = (char *) malloc((strlen(tmp_path) + 2));
   if (!path) {
     free(tmp_url);
+    free(tmp_path);
     url_free(data);
     return NULL;
   }
@@ -325,7 +330,12 @@ url_get_path (const char* url) {
 
 
   if (!protocol || !hostname)
+  {
+    free(protocol);
+    free(auth);
+    free(hostname);
     return NULL;
+  }
 
   const bool is_ssh = url_is_ssh(protocol);
 
