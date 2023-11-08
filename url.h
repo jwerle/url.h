@@ -69,13 +69,20 @@ typedef struct url_data {
 url_data_t *
 url_parse (const char* url);
 
-// Parses url, returns the protocol (a.k.a. URL "scheme") of the URL.
+// Parses url, returns the "scheme" (a.k.a. "protocol") of the URL.
 // Caller must free() the returned string.
 char *
-url_get_protocol (const char* url);
+url_get_scheme (const char* url);
+
+// Parses url, returns the protocol (a.k.a. URL "scheme") of the URL.
+// Caller must free() the returned string.
+// DEPRECATED! Use url_get_scheme() instead.
+inline
+char *
+url_get_protocol (const char* url) { return url_get_scheme(url); }
 
 // Parses url, returns "username:password" of the URL if present or NULL.
-// Caller must free() the returned string.
+// Caller must free() the returned string if not NULL.
 char *
 url_get_auth (const char* url);
 
@@ -90,17 +97,24 @@ char *
 url_get_path (const char* url);
 
 // Parses url, returns the query string (afterthe "?") of the URL if present or NULL.
-// Caller must free() the returned string.
+// Caller must free() the returned string if not NULL.
 char *
 url_get_query (const char* url);
 
 // Parses url, returns the fragment (after the "#") of the URL if present or NULL.
-// Caller must free() the returned string.
+// Caller must free() the returned string if not NULL.
 char *
-url_get_hash (const char* url);
+url_get_fragment (const char* url);
+
+// Parses url, returns the fragment (after the "#") of the URL if present or NULL.
+// Caller must free() the returned string if not NULL.
+// DEPRECATED! Use url_get_fragment() instead.
+inline
+char *
+url_get_hash (const char* url) { return url_get_fragment(url); }
 
 // Parses url, returns the port of the URL if present or NULL.
-// Caller must free() the returned string.
+// Caller must free() the returned string if not NULL.
 char *
 url_get_port (const char* url);
 
