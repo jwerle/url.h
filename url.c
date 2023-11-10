@@ -2,7 +2,7 @@
 #include "url.h"
 
 #include "url_char_category.h"
-#include "url_char_category_table.h"
+#include "url_char_category_table.h" // generated file!
 
 /**
  * URI Schemes
@@ -31,6 +31,7 @@ static const char *URL_SCHEMES[] = {
   "javascript", "jdbc", "doi"
 };
 
+
 #ifndef HAVE_STRDUP
 // non C99 standard functions
 #if __POSIX_C_SOURCE__ < 200809L
@@ -45,25 +46,16 @@ strdup (const char *str) {
 #endif
 
 
-static char *
-strff (const char* ptr, size_t n) {
-  for (size_t i = 0; i < n; ++i) {
-    (void) *ptr++;
-  }
-
-  return strdup(ptr);
-}
-
-
-static char*
+static
+char*
 scan_part(char* start, enum Category category, char delimiter) {
-  const char* p = start;
+  char* p = start;
   for(;;)
   {
     if( *p=='\0' || *p==delimiter)
        return p; // success! :-)
     
-    if(char_cat[ (unsigned char) *p ] & category !=0) {
+    if(char_cat[ (unsigned char) *p ] & category) {
       ++p;
     }else{
       return NULL; // illegal character in URL string -> Abort!
@@ -72,6 +64,23 @@ scan_part(char* start, enum Category category, char delimiter) {
 }
 
 
+enum Direction { Forward = +1, Backward = -1 };
+
+static
+char*
+scan_decimal_number(char* start, Direction dir)
+{
+  char* p = start;
+  while(*p >='0' && *p<='9')
+  {
+    p += (int)dir;
+  }
+  
+  return (p!=start) ? p : NULL;
+}
+
+
+/*
 static char *
 get_part (const char* url, const char *format, int l) {
   bool has = false;
@@ -111,6 +120,7 @@ get_part (const char* url, const char *format, int l) {
 
   return has? ret : NULL;
 }
+*/
 
 
 url_data_t*
@@ -132,24 +142,55 @@ url_parse (const char* url) {
   *protocol_end = '\0';
   data->protocol = p;
   p = protocol_end + 1;
+  if(p>=p_end)
+    goto error;
 
   const bool is_ssh = url_is_ssh(data->protocol);
 
   char* userinfo_end = scan_part(p, Userinfo, '@');
   if(userinfo_end && *userinfo_end == '@') { // userinfo found
-    userinfo_end = '\0';
+    *userinfo_end = '\0';
     data->userinfo = p;
     p = userinfo_end + 1;
   }
 
-  char* hostname_end = scan_part( p, Unreserved | SubDelim, (is_ssh ? ':' : '/') );
-
-  if (!hostname_end)
+  if(p>=p_end)
     goto error;
+
+  char* hostname_end = NULL;
+  
+  if(*p == '[')
+  {
+    ++p;
+    hostname_end = scan_part( p, IPv6Char, ']' );
+    if(!hostname_end)
+      goto error;
+    
+    *hostname_end = '\0'; // eliminate ']'
+    data->host = p;
+    ++hostname_end;
+    if(hostname_end < p_end && !is_ssh && *hostname_end==':') // port number follows the host
+    {
+      char* port_end = scan_decimal_number( hostname_end+1, Forward );
+      if(port_end)
+      {
+        *port_end = '\0';
+        data->port = hostname_end+1;
+        p = port_end + 1;
+      }
+    }
+  }else{
+    hostname_end = scan_part( p, Unreserved | SubDelim, (is_ssh ? ':' : '/') );
+    if (!hostname_end)
+      goto error;
+    
+    if(!is_ssh)
+  }
   
   *hostname_end = '\0';
-  data->hostname = hostname;
+  data->host = p;
 
+/*
   char *host = (char *) malloc((strlen(tmp_hostname)+1));
   sscanf(tmp_hostname, "%[^:]", host);
   free(tmp_hostname);
@@ -159,6 +200,7 @@ url_parse (const char* url) {
     return NULL;
   }
   data->host = host;
+
 
   const size_t host_len = strlen(host);
   if (hostname_len > host_len) {
@@ -217,6 +259,7 @@ url_parse (const char* url) {
   data->hash = hash;
   free(tmp_path);
   free(tmp_url);
+*/
 
   return data;
 
@@ -248,7 +291,7 @@ url_is_ssh (const char* str) {
 }
 
 char *
-url_get_protocol (const char* url) {
+url_get_scheme (const char* url) {
   char *protocol = (char *) malloc(URL_PROTOCOL_MAX_LENGTH);
   if (!protocol) return NULL;
 
@@ -261,16 +304,13 @@ url_get_protocol (const char* url) {
 
 
 char *
-url_get_auth (const char* url) {
-  char *protocol = url_get_protocol(url);
-  if (!protocol) return NULL;
-  const size_t l = strlen(protocol) + 3;
-  free(protocol);
-  return get_part(url, "%[^@]", l);
+url_get_userinfo (const char* url) {
+	return NULL; // TODO
 }
 
 char *
 url_get_hostname (const char* url) {
+/*
   size_t l = 3;
   char *protocol = url_get_protocol(url);
   char *tmp_protocol = strdup(protocol);
@@ -291,11 +331,13 @@ url_get_hostname (const char* url) {
     : get_part(url, "%[^/]", l);
   free(tmp_protocol);
   return hostname;
+  */ return NULL;
 }
 
 char *
 url_get_host (const char* url) {
   char *host = NULL;
+/*
   char *hostname = url_get_hostname(url);
 
   if (!hostname) return NULL;
@@ -303,12 +345,13 @@ url_get_host (const char* url) {
   sscanf(hostname, "%m[^:]", &host);
 
   free(hostname);
-
+*/
   return host;
 }
 
 char *
 url_get_pathname (const char* url) {
+/*
   char *path = url_get_path(url);
   char *pathname = NULL;
 
@@ -317,12 +360,13 @@ url_get_pathname (const char* url) {
   sscanf(path, "%m[^?]", &pathname);
 
   free(path);
-
-  return pathname;
+*/
+  return NULL;
 }
 
 char *
 url_get_path (const char* url) {
+/*
   size_t l = 3;
   char *protocol = url_get_protocol(url);
   char *auth     = url_get_auth(url);
@@ -355,12 +399,13 @@ url_get_path (const char* url) {
   free(protocol);
   free(hostname);
   free(tmp_path);
-
-  return path;
+*/
+  return NULL;
 }
 
 char *
 url_get_search (const char* url) {
+/*
   char *path = url_get_path(url);
   char *pathname = url_get_pathname(url);
 
@@ -371,23 +416,26 @@ url_get_search (const char* url) {
 
   free(path);
   free(pathname);
-
-  return search;
+*/
+  return NULL;
 }
 
 char *
 url_get_query (const char* url) {
+/*
   char *search = url_get_search(url);
   char *query = NULL;
   if (!search) return NULL;
 
   sscanf(search, "?%ms", &query);
   free(search);
-  return query;
+*/
+  return NULL;
 }
 
 char *
-url_get_hash (const char* url) {
+url_get_fragment (const char* url) {
+/*
   char *path = url_get_path(url);
   if (!path) return NULL;
 
@@ -410,12 +458,13 @@ url_get_hash (const char* url) {
   free(pathname);
   free(path);
   free(search);
-
-  return hash;
+*/
+  return NULL;
 }
 
 char *
 url_get_port (const char* url) {
+/*
   char *port = NULL;
   char *hostname = url_get_hostname(url);
   char *host = url_get_host(url);
@@ -424,11 +473,12 @@ url_get_port (const char* url) {
   sscanf(hostname + strlen(host) + 1, "%ms", &port);
   free(hostname);
   free(host);
-  return port;
+*/
+  return NULL;
 }
 
 void
-url_inspect (char* url) {
+url_inspect (const char* url) {
   url_data_inspect(url_parse(url));
 }
 
@@ -443,31 +493,27 @@ url_inspect (char* url) {
 void
 url_data_inspect (const url_data_t* data) {
   printf("#url =>\n");
-  PRINT_MEMBER(href);
   PRINT_MEMBER(protocol);
   PRINT_MEMBER(host);
-  PRINT_MEMBER(auth);
-  PRINT_MEMBER(hostname);
-  PRINT_MEMBER(pathname);
-  PRINT_MEMBER(search);
-  PRINT_MEMBER(path);
-  PRINT_MEMBER(hash);
-  PRINT_MEMBER(query);
+  PRINT_MEMBER(userinfo);
+  PRINT_MEMBER(host);
   PRINT_MEMBER(port);
+  PRINT_MEMBER(path);
+  PRINT_MEMBER(query);
+  PRINT_MEMBER(fragment);
 }
 
 void
 url_free (url_data_t *data) {
   if (!data) return;
-  free(data->auth);
-  free(data->protocol);
-  free(data->hostname);
-  free(data->host);
-  free(data->pathname);
-  free(data->path);
-  free(data->hash);
-  free(data->port);
-  free(data->search);
-  free(data->query);
+  free(data->whole_url);
   free(data);
 }
+
+
+// C99 is brain-dead, so we need these:
+extern inline
+char* url_get_protocol (const char* url);
+
+extern inline
+char* url_get_hash (const char* url);

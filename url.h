@@ -49,7 +49,7 @@
  * of a parsed URL such as host and protocol
  */
 typedef struct url_data {
-  const char* whole_url; // holds the whole URL, but with '\0' to separae the parts of the URL
+  char* whole_url; // holds the whole URL, but with '\0' to separae the parts of the URL
   const char* protocol; // URL scheme
   const char* userinfo; // can be NULL
   const char* host;

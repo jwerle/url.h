@@ -1,5 +1,5 @@
 
-#include <url.h>
+#include "url.h"
 #include <assert.h>
 #include <string.h>
 
@@ -28,24 +28,19 @@ main (void) {
   url_data_inspect(parsed);
   url_data_inspect(gh_parsed);
 
-  assert(parsed->href);
-  assert(parsed->auth);
+  assert(parsed->whole_url);
   assert(parsed->protocol);
-  assert(parsed->port);
-  assert(parsed->hostname);
+  assert(parsed->userinfo);
   assert(parsed->host);
-  assert(parsed->pathname);
+  assert(parsed->port);
   assert(parsed->path);
-  assert(parsed->hash);
-  assert(parsed->search);
   assert(parsed->query);
+  assert(parsed->fragment);
 
-  assert(gh_parsed->href);
+  assert(gh_parsed->whole_url);
   assert(gh_parsed->protocol);
+  assert(gh_parsed->userinfo);
   assert(gh_parsed->host);
-  assert(gh_parsed->auth);
-  assert(gh_parsed->hostname);
-  assert(gh_parsed->pathname);
   assert(gh_parsed->path);
 
   assert(url_is_protocol("http"));
@@ -57,21 +52,16 @@ main (void) {
   assert(url_is_protocol("javascript"));
 
   STRING_ASSERT("http",                       url_get_protocol(url));
-  STRING_ASSERT("user:pass",                  url_get_auth    (url));
-  STRING_ASSERT("subdomain.host.com:8080",    url_get_hostname(url));
-  STRING_ASSERT("subdomain.host.com",         url_get_host    (url));
-  STRING_ASSERT("/p/a/t/h",                   url_get_pathname(url));
-  STRING_ASSERT("/p/a/t/h?query=string#hash", url_get_path    (url));
-  STRING_ASSERT("?query=string",              url_get_search  (url));
+  STRING_ASSERT("user:pass",                  url_get_userinfo(url));
+  STRING_ASSERT("subdomain.host.com",         url_get_hostname(url));
+  STRING_ASSERT("/p/a/t/h",                   url_get_path    (url));
   STRING_ASSERT("query=string",               url_get_query   (url));
-  STRING_ASSERT("#hash",                      url_get_hash    (url));
+  STRING_ASSERT("#hash",                      url_get_fragment(url));
   STRING_ASSERT("8080",                       url_get_port    (url));
 
   STRING_ASSERT("git",               url_get_protocol(gh_url));
-  STRING_ASSERT("github.com",        url_get_host    (gh_url));
   STRING_ASSERT("github.com",        url_get_hostname(gh_url));
-  STRING_ASSERT("git",               url_get_auth    (gh_url));
-  STRING_ASSERT("jwerle/url.h.git",  url_get_pathname(gh_url));
+  STRING_ASSERT("git",               url_get_userinfo(gh_url));
   STRING_ASSERT("jwerle/url.h.git",  url_get_path    (gh_url));
 
   url_free(parsed);
