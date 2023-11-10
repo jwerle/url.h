@@ -12,6 +12,7 @@ enum Category
   Query      = 0x40,  // pchar / ?
   Fragment   = 0x40,  // same as Query :-)
   Userinfo   = 0x80,  // alnum unreserved subdelim :
+  IPv6Char   = 0x100, // hexdigit :
 };
 
 #endif
