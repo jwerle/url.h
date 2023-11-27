@@ -48,11 +48,11 @@ strdup (const char *str) {
 
 static
 char*
-scan_part(char* start, enum Category category, char delimiter) {
+scan_part(char* start, enum Category category, char delimiter1, char delimiter2) {
   char* p = start;
   for(;;)
   {
-    if( *p=='\0' || *p==delimiter)
+    if( *p=='\0' || *p==delimiter1 || *p==delimiter2)
        return p; // success! :-)
     
     if(char_cat[ (unsigned char) *p ] & category) {
@@ -64,16 +64,14 @@ scan_part(char* start, enum Category category, char delimiter) {
 }
 
 
-enum Direction { Forward = +1, Backward = -1 };
-
 static
 char*
-scan_decimal_number(char* start, Direction dir)
+scan_decimal_number(char* start)
 {
   char* p = start;
   while(*p >='0' && *p<='9')
   {
-    p += (int)dir;
+    ++p;
   }
   
   return (p!=start) ? p : NULL;
@@ -135,7 +133,7 @@ url_parse (const char* url) {
   data->whole_url = p;
   const char* p_end = p + strlen(p);
 
-  char* protocol_end = scan_part(p, Scheme, ':');
+  char* protocol_end = scan_part(p, Scheme, ':', '\0');
   if (!protocol_end || *protocol_end=='\0')
     goto error;
 
@@ -147,7 +145,7 @@ url_parse (const char* url) {
 
   const bool is_ssh = url_is_ssh(data->protocol);
 
-  char* userinfo_end = scan_part(p, Userinfo, '@');
+  char* userinfo_end = scan_part(p, Userinfo, '@', '\0');
   if(userinfo_end && *userinfo_end == '@') { // userinfo found
     *userinfo_end = '\0';
     data->userinfo = p;
@@ -159,10 +157,10 @@ url_parse (const char* url) {
 
   char* hostname_end = NULL;
   
-  if(*p == '[')
+  if(*p == '[') // IPv6 literal address
   {
     ++p;
-    hostname_end = scan_part( p, IPv6Char, ']' );
+    hostname_end = scan_part( p, IPv6Char, ']', '\0' );
     if(!hostname_end)
       goto error;
     
@@ -171,7 +169,7 @@ url_parse (const char* url) {
     ++hostname_end;
     if(hostname_end < p_end && !is_ssh && *hostname_end==':') // port number follows the host
     {
-      char* port_end = scan_decimal_number( hostname_end+1, Forward );
+      char* port_end = scan_decimal_number( hostname_end+1 );
       if(port_end)
       {
         *port_end = '\0';
@@ -179,12 +177,21 @@ url_parse (const char* url) {
         p = port_end + 1;
       }
     }
-  }else{
-    hostname_end = scan_part( p, Unreserved | SubDelim, (is_ssh ? ':' : '/') );
+  }else{ // alphanumeric hostname or IPv4 address
+    hostname_end = scan_part( p, Unreserved | SubDelim, ':', '/' );
     if (!hostname_end)
       goto error;
     
-    if(!is_ssh)
+    if(!is_ssh && *hostname_end==':')
+    {
+      char* port_end = scan_decimal_number( hostname_end+1 );
+      if(port_end)
+      {
+        *port_end = '\0';
+        data->port = hostname_end+1;
+        p = port_end + 1;
+      }
+    }
   }
   
   *hostname_end = '\0';
