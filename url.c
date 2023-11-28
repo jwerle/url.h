@@ -175,99 +175,78 @@ url_parse (const char* url) {
         *port_end = '\0';
         data->port = hostname_end+1;
         p = port_end + 1;
+      }else{
+        goto error;
       }
+    }else{ // no port number
+      p = hostname_end + 1;
     }
   }else{ // alphanumeric hostname or IPv4 address
     hostname_end = scan_part( p, Unreserved | SubDelim, ':', '/' );
     if (!hostname_end)
       goto error;
     
-    if(!is_ssh && *hostname_end==':')
+    data->host = p;
+    if(!is_ssh && *hostname_end==':') // we have a port number
     {
+      *hostname_end = '\0';
       char* port_end = scan_decimal_number( hostname_end+1 );
       if(port_end)
       {
         *port_end = '\0';
         data->port = hostname_end+1;
         p = port_end + 1;
+      }else{
+        goto error;
       }
+    }else{ // no port number
+      *hostname_end = '\0';
+      p = hostname_end + 1;
     }
   }
   
-  *hostname_end = '\0';
-  data->host = p;
-
-/*
-  char *host = (char *) malloc((strlen(tmp_hostname)+1));
-  sscanf(tmp_hostname, "%[^:]", host);
-  free(tmp_hostname);
-  if (!host) {
-    free(tmp_url);
-    url_free(data);
-    return NULL;
+  char* path_end = scan_part( p, PChar, '?', '#' );
+  if(!path_end)
+    goto error;
+  
+  data->path = p;
+  const bool has_query = (*path_end == '?');
+  const bool has_fragment = (*path_end == '#');
+  *path_end = '\0';
+  
+  p = path_end + 1;
+  if(has_query)
+  {
+    char* query_end = scan_part( p, Query, '#', '\0' );
+    if(query_end)
+    {
+      data->query = p;
+      if(*query_end == '#') // fragment followes query: ...?query#fragment
+      {
+        *query_end = '\0';
+        char* fragment_end = scan_part( query_end+1, Fragment, '\0', '\0' );
+        if(fragment_end)
+        {
+          data->fragment = query_end+1;
+        }else{
+          goto error;
+        }
+      }
+    }else{
+      goto error; // no valid query string
+    }
+  }else if(has_fragment) // ...#fragment
+  {
+        char* fragment_end = scan_part( p, Fragment, '\0', '\0' );
+        if(fragment_end)
+        {
+          data->fragment = p;
+        }else{
+          goto error;
+        }
   }
-  data->host = host;
-
-
-  const size_t host_len = strlen(host);
-  if (hostname_len > host_len) {
-    data->port = strff(hostname, host_len + 1); // +1 for ':' char;
-  } else {
-    data->port = NULL;
-  }
-
-  char *tmp_path = (is_ssh)
-    ? get_part(tmp_url, ":%s", protocol_len + auth_len + hostname_len)
-    : get_part(tmp_url, "/%s", protocol_len + auth_len + hostname_len);
-
-  char *path = (char *) malloc((strlen(tmp_path) + 2));
-  if (!path) {
-    free(tmp_url);
-    free(tmp_path);
-    url_free(data);
-    return NULL;
-  }
-  const char *fmt = (is_ssh)? "%s" : "/%s";
-  sprintf(path, fmt, tmp_path);
-  data->path = path;
-
-  char *pathname = (char *) malloc((strlen(tmp_path) + 2));
-  free(tmp_path);
-  if (!pathname) {
-    free(tmp_url);
-    url_free(data);
-    return NULL;
-  }
-  strcat(pathname, "");
-  tmp_path = strdup(path);
-  sscanf(tmp_path, "%[^? | ^#]", pathname);
-  const size_t pathname_len = strlen(pathname);
-  data->pathname = pathname;
-
-  char* tmp_path_new = strff(tmp_path, pathname_len);
-  free(tmp_path);
-  tmp_path = tmp_path_new;
-  char* search = NULL;
-  sscanf(tmp_path, "%m[^#]", &search);
-  data->search = search;
-
-  const size_t search_len = search ? strlen(search) : 0;
-  free(tmp_path);
-
-  if(search) {
-    char* query = NULL;
-    sscanf(search, "?%ms", &query);
-    data->query = query;
-  }
-
-  char* hash = NULL;
-  tmp_path = strff(path, pathname_len + search_len);
-  sscanf(tmp_path, "%ms", &hash);
-  data->hash = hash;
-  free(tmp_path);
-  free(tmp_url);
-*/
-
+  
+//finished:
   return data;
 
 error:
