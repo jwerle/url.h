@@ -4,6 +4,10 @@
 #include "url_char_category.h"
 #include "url_char_category_table.h" // generated file!
 
+
+#define GOTO_ERROR  do{ fprintf(stderr, "ERROR %s Line %u! p=«%s»\n", __FILE__, __LINE__ , p); goto error; }while(0)
+
+
 /**
  * URI Schemes
  * http://en.wikipedia.org/wiki/URI_scheme
@@ -128,22 +132,30 @@ url_parse (const char* url) {
 
   char* p = strdup(url);
   if(!p)
-    goto error;
+    GOTO_ERROR;
   
   data->whole_url = p;
   const char* p_end = p + strlen(p);
 
   char* protocol_end = scan_part(p, Scheme, ':', '\0');
   if (!protocol_end || *protocol_end=='\0')
-    goto error;
+    GOTO_ERROR;
 
   *protocol_end = '\0';
   data->protocol = p;
-  p = protocol_end + 1;
-  if(p>=p_end)
-    goto error;
-
   const bool is_ssh = url_is_ssh(data->protocol);
+
+  p = protocol_end + 1;
+  if(p>=p_end || *p != '/')
+    GOTO_ERROR;
+    
+  ++p; // consume first slash
+  if(p>=p_end || *p != '/')
+    GOTO_ERROR;
+  
+  ++p; // consume second slash
+  if(p>=p_end)
+    GOTO_ERROR;
 
   char* userinfo_end = scan_part(p, Userinfo, '@', '\0');
   if(userinfo_end && *userinfo_end == '@') { // userinfo found
@@ -153,7 +165,7 @@ url_parse (const char* url) {
   }
 
   if(p>=p_end)
-    goto error;
+    GOTO_ERROR;
 
   char* hostname_end = NULL;
   
@@ -162,7 +174,7 @@ url_parse (const char* url) {
     ++p;
     hostname_end = scan_part( p, IPv6Char, ']', '\0' );
     if(!hostname_end)
-      goto error;
+      GOTO_ERROR;
     
     *hostname_end = '\0'; // eliminate ']'
     data->host = p;
@@ -176,7 +188,7 @@ url_parse (const char* url) {
         data->port = hostname_end+1;
         p = port_end + 1;
       }else{
-        goto error;
+        GOTO_ERROR;
       }
     }else{ // no port number
       p = hostname_end + 1;
@@ -184,7 +196,7 @@ url_parse (const char* url) {
   }else{ // alphanumeric hostname or IPv4 address
     hostname_end = scan_part( p, Unreserved | SubDelim, ':', '/' );
     if (!hostname_end)
-      goto error;
+      GOTO_ERROR;
     
     data->host = p;
     if(!is_ssh && *hostname_end==':') // we have a port number
@@ -197,7 +209,7 @@ url_parse (const char* url) {
         data->port = hostname_end+1;
         p = port_end + 1;
       }else{
-        goto error;
+        GOTO_ERROR;
       }
     }else{ // no port number
       *hostname_end = '\0';
@@ -205,9 +217,10 @@ url_parse (const char* url) {
     }
   }
   
-  char* path_end = scan_part( p, PChar, '?', '#' );
+  // FIXME: accepts _any_ sequence of "PChar"s and slashes, which is not RFC compliant
+  char* path_end = scan_part( p, PCharSlash, '?', '#' );
   if(!path_end)
-    goto error;
+    GOTO_ERROR;
   
   data->path = p;
   const bool has_query = (*path_end == '?');
@@ -229,11 +242,11 @@ url_parse (const char* url) {
         {
           data->fragment = query_end+1;
         }else{
-          goto error;
+          GOTO_ERROR;
         }
       }
     }else{
-      goto error; // no valid query string
+      GOTO_ERROR; // no valid query string
     }
   }else if(has_fragment) // ...#fragment
   {
@@ -242,7 +255,7 @@ url_parse (const char* url) {
         {
           data->fragment = p;
         }else{
-          goto error;
+          GOTO_ERROR;
         }
   }
   

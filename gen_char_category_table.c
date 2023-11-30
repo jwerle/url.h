@@ -60,8 +60,8 @@ int main()
 	
 	fill( SubDelim  , alnum, subdelim);
 	
-	fill( PChar, alnum, ":@");  // part #1
-	fill( PChar, unreserved, subdelim); // part #2
+	fill( PCharSlash, alnum, ":@/");  // part #1
+	fill( PCharSlash, unreserved, subdelim); // part #2
 	
 	fill( HexDigit, "0123456789", "abcdef" "ABCDEF");
 	
