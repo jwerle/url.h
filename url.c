@@ -302,178 +302,57 @@ url_get_scheme (const char* url) {
 }
 
 
+#define GET_MEMBER(member) do{ \
+    url_data_t* data = url_parse(url);  \
+    char* out = data && data->member ? strdup(data->member) : NULL; \
+    url_free(data);                   \
+    return out;                       \
+ }while(0)
+
+
 char *
 url_get_userinfo (const char* url) {
-	return NULL; // TODO
+  GET_MEMBER(userinfo);
 }
 
 char *
 url_get_hostname (const char* url) {
-/*
-  size_t l = 3;
-  char *protocol = url_get_protocol(url);
-  char *tmp_protocol = strdup(protocol);
-  char *auth = url_get_auth(url);
-
-  if (!protocol) return NULL;
-  if (auth) {
-    l += strlen(auth) + 1; // add one @ symbol
-    free(auth);
-  }
-
-  l += strlen(protocol);
-
-  free(protocol);
-
-  char * hostname = url_is_ssh(tmp_protocol)
-    ? get_part(url, "%[^:]", l)
-    : get_part(url, "%[^/]", l);
-  free(tmp_protocol);
-  return hostname;
-  */ return NULL;
+  GET_MEMBER(host);
 }
 
 char *
 url_get_host (const char* url) {
-  char *host = NULL;
-/*
-  char *hostname = url_get_hostname(url);
-
-  if (!hostname) return NULL;
-
-  sscanf(hostname, "%m[^:]", &host);
-
-  free(hostname);
-*/
-  return host;
+  GET_MEMBER(host);
 }
 
 char *
 url_get_pathname (const char* url) {
-/*
-  char *path = url_get_path(url);
-  char *pathname = NULL;
-
-  if (!path) return NULL;
-
-  sscanf(path, "%m[^?]", &pathname);
-
-  free(path);
-*/
-  return NULL;
+  GET_MEMBER(path);
 }
 
 char *
 url_get_path (const char* url) {
-/*
-  size_t l = 3;
-  char *protocol = url_get_protocol(url);
-  char *auth     = url_get_auth(url);
-  char *hostname = url_get_hostname(url);
-
-
-  if (!protocol || !hostname)
-  {
-    free(protocol);
-    free(auth);
-    free(hostname);
-    return NULL;
-  }
-
-  const bool is_ssh = url_is_ssh(protocol);
-
-  l += strlen(protocol) + strlen(hostname);
-
-  if (auth) l+= strlen(auth) +1; // @ symbol
-
-  char* tmp_path = (is_ssh)
-    ? get_part(url, ":%s", l)
-    : get_part(url, "/%s", l);
-
-  const char *fmt = (is_ssh)? "%s" : "/%s";
-  char *path = (char *) malloc(strlen(tmp_path)+2);
-  sprintf(path, fmt, tmp_path);
-
-  free(auth);
-  free(protocol);
-  free(hostname);
-  free(tmp_path);
-*/
-  return NULL;
+  GET_MEMBER(path);
 }
 
 char *
 url_get_search (const char* url) {
-/*
-  char *path = url_get_path(url);
-  char *pathname = url_get_pathname(url);
-
-  if (!path) return NULL;
-
-  char *search = NULL;
-  sscanf(path + strlen(pathname), "%m[^#]", &search);
-
-  free(path);
-  free(pathname);
-*/
-  return NULL;
+  GET_MEMBER(query);
 }
 
 char *
 url_get_query (const char* url) {
-/*
-  char *search = url_get_search(url);
-  char *query = NULL;
-  if (!search) return NULL;
-
-  sscanf(search, "?%ms", &query);
-  free(search);
-*/
-  return NULL;
+  GET_MEMBER(query);
 }
 
 char *
 url_get_fragment (const char* url) {
-/*
-  char *path = url_get_path(url);
-  if (!path) return NULL;
-
-  char *pathname = url_get_pathname(url);
-  if (!pathname) {
-    free(path);
-    return NULL;
-  }
-  
-  char *search = url_get_search(url);
-
-  const size_t pathname_len = strlen(pathname);
-  const size_t search_len   = strlen(search);
-  char *tmp_path = strff(path, pathname_len + search_len);
-
-  char* hash = NULL;
-  sscanf(tmp_path, "%ms", &hash);
-//  tmp_path = strrwd(tmp_path, pathname_len + search_len);
-  free(tmp_path);
-  free(pathname);
-  free(path);
-  free(search);
-*/
-  return NULL;
+  GET_MEMBER(fragment);
 }
 
 char *
 url_get_port (const char* url) {
-/*
-  char *port = NULL;
-  char *hostname = url_get_hostname(url);
-  char *host = url_get_host(url);
-  if (!hostname) return NULL;
-
-  sscanf(hostname + strlen(host) + 1, "%ms", &port);
-  free(hostname);
-  free(host);
-*/
-  return NULL;
+  GET_MEMBER(port);
 }
 
 void
