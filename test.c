@@ -56,7 +56,7 @@ main (void) {
   STRING_ASSERT("subdomain.host.com",         url_get_hostname(url));
   STRING_ASSERT("/p/a/t/h",                   url_get_path    (url));
   STRING_ASSERT("query=string",               url_get_query   (url));
-  STRING_ASSERT("#hash",                      url_get_fragment(url));
+  STRING_ASSERT("hash",                       url_get_fragment(url));
   STRING_ASSERT("8080",                       url_get_port    (url));
 
   STRING_ASSERT("git",               url_get_protocol(gh_url));
