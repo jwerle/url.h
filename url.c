@@ -82,49 +82,6 @@ scan_decimal_number(char* start)
 }
 
 
-/*
-static char *
-get_part (const char* url, const char *format, int l) {
-  bool has = false;
-  char *tmp = strdup(url);
-  char *tmp_url = strdup(url);
-  char *fmt_url = strdup(url);
-  char *ret = NULL;
-
-  if (!tmp || !tmp_url || !fmt_url) {
-    free(tmp);
-    free(tmp_url);
-    free(fmt_url);
-    return NULL;
-  }
-
-  strcpy(tmp, "");
-  strcpy(fmt_url, "");
-
-  // move pointer exactly the amount
-  // of characters in the `prototcol` char
-  // plus 3 characters that represent the `://`
-  // part of the url
-  char* fmt_url_new = strff(fmt_url, l);
-  free(fmt_url);
-  fmt_url = fmt_url_new;
-
-  sscanf(fmt_url, format, tmp);
-
-  if (0 != strcmp(tmp, tmp_url)) {
-    has = true;
-    ret = strdup(tmp);
-  }
-
-  free(tmp);
-  free(tmp_url);
-  free(fmt_url);
-
-  return has? ret : NULL;
-}
-*/
-
-
 url_data_t*
 url_parse (const char* url) {
   url_data_t *data = (url_data_t *) calloc(1, sizeof(url_data_t));
@@ -135,7 +92,7 @@ url_parse (const char* url) {
     GOTO_ERROR;
   
   data->whole_url = p;
-  const char* p_end = p + strlen(p);
+  const char* const p_end = p + strlen(p);
 
   char* protocol_end = scan_part(p, Scheme, ':', '\0');
   if (!protocol_end || *protocol_end=='\0')
@@ -152,6 +109,8 @@ url_parse (const char* url) {
   ++p; // consume first slash
   if(p>=p_end || *p != '/')
     GOTO_ERROR;
+  
+  char* const second_slash = p;
   
   ++p; // consume second slash
   if(p>=p_end)
@@ -184,14 +143,13 @@ url_parse (const char* url) {
       char* port_end = scan_decimal_number( hostname_end+1 );
       if(port_end)
       {
-        *port_end = '\0';
         data->port = hostname_end+1;
-        p = port_end + 1;
+        p = port_end;
       }else{
         GOTO_ERROR;
       }
     }else{ // no port number
-      p = hostname_end + 1;
+      p = hostname_end;
     }
   }else{ // alphanumeric hostname or IPv4 address
     hostname_end = scan_part( p, Unreserved | SubDelim, ':', '/' );
@@ -205,16 +163,32 @@ url_parse (const char* url) {
       char* port_end = scan_decimal_number( hostname_end+1 );
       if(port_end)
       {
-        *port_end = '\0';
         data->port = hostname_end+1;
-        p = port_end + 1;
+        p = port_end;
       }else{
         GOTO_ERROR;
       }
     }else{ // no port number
-      *hostname_end = '\0';
-      p = hostname_end + 1;
+      p = hostname_end;
     }
+  }
+  
+  // HACK: move userinfo, host and port by one char to add a \0 before the first '/' in the path:
+  memmove(second_slash, second_slash+1, p-second_slash);
+  if(data->userinfo)
+    --(data->userinfo);
+  
+  --(data->host);
+  
+  if(data->port)
+    --(data->port);
+  
+  p[-1] = '\0';
+  // END HACK
+  
+  if(is_ssh && *p == ':')
+  {
+    ++p; // omit the first ':' from ssh URL's path
   }
   
   // FIXME: accepts _any_ sequence of "PChar"s and slashes, which is not RFC compliant
