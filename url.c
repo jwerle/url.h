@@ -255,7 +255,7 @@ url_parse (const char* url) {
         char* fragment_end = scan_part( query_end+1, Fragment, '\0', '\0' );
         if(fragment_end)
         {
-          data->fragment = query_end+1;
+          data->fragment = decode_percent(query_end+1);
         }else{
           GOTO_ERROR;
         }
@@ -268,7 +268,7 @@ url_parse (const char* url) {
         char* fragment_end = scan_part( p, Fragment, '\0', '\0' );
         if(fragment_end)
         {
-          data->fragment = p;
+          data->fragment = decode_percent(p);
         }else{
           GOTO_ERROR;
         }
