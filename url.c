@@ -51,6 +51,47 @@ strdup (const char *str) {
 
 
 static
+int unhex(const char* s)
+{
+  if(*s>='0' && *s<='9')
+    return *s - '0';
+  
+  if(*s>='A' && *s<='E')
+    return *s - 'A' + 10;
+  
+  if(*s>='a' && *s<='f')
+    return *s - 'a' + 10;
+  
+  return -1;
+}
+
+
+// decode %xx encoding inplace.
+// return NULL in case of error
+static
+char* decode_percent(char* s)
+{
+  char* in  = s;
+  char* out = s;
+  while(*in)
+  {
+    if(*in=='%')
+    {
+      const int high = unhex(++in); if(high<0 || *s=='\0') return NULL;
+      const int low  = unhex(++in); if(low <0 || *s=='\0') return NULL;
+      *out = (char)(high*16u + low);
+      ++out;
+      ++in;
+    }else{
+      *out++ = *in++; // usual string copy idiom. :-)
+    }
+  }
+  *out = '\0';
+  return s;
+}
+
+
+static
 char*
 scan_part(char* start, enum Category category, char delimiter1, char delimiter2) {
   char* p = start;
@@ -196,11 +237,11 @@ url_parse (const char* url) {
   if(!path_end)
     GOTO_ERROR;
   
-  data->path = p;
   const bool has_query = (*path_end == '?');
   const bool has_fragment = (*path_end == '#');
   *path_end = '\0';
   
+  data->path = decode_percent(p);
   p = path_end + 1;
   if(has_query)
   {

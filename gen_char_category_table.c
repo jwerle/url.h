@@ -60,15 +60,15 @@ int main()
 	
 	fill( SubDelim  , alnum, subdelim);
 	
-	fill( PCharSlash, alnum, ":@/");  // part #1
+	fill( PCharSlash, alnum, ":@/%");  // part #1
 	fill( PCharSlash, unreserved, subdelim); // part #2
 	
 	fill( HexDigit, "0123456789", "abcdef" "ABCDEF");
 	
-	fill( Query, alnum, "/?:@"); // part #1
+	fill( Query, alnum, "/?:@%"); // part #1
 	fill( Query, unreserved, subdelim); // part #2
 	
-	fill( Userinfo, alnum, ":"); // part #1
+	fill( Userinfo, alnum, ":%"); // part #1
 	fill( Userinfo, unreserved, subdelim); // part #2
 	
 	fill( IPv6Char, "0123456789", "abcdef" "ABCDEF" ":");

@@ -17,7 +17,7 @@ main (void) {
   //url_inspect("https://google.com/search?q=github");
 
   char *gh_url = "git://git@github.com:jwerle/url.h.git";
-  char *url = "http://user:pass@subdomain.host.com:8080/p/a/t/h?query=string#hash";
+  char *url = "http://user:pass@subdomain.host.com:8080/p/%C3%A5/t/h?query=string#hash";
 
   url_data_t *parsed = url_parse(url);
   url_data_t *gh_parsed = url_parse(gh_url);
@@ -54,7 +54,7 @@ main (void) {
   STRING_ASSERT("http",                       url_get_protocol(url));
   STRING_ASSERT("user:pass",                  url_get_userinfo(url));
   STRING_ASSERT("subdomain.host.com",         url_get_hostname(url));
-  STRING_ASSERT("/p/a/t/h",                   url_get_path    (url));
+  STRING_ASSERT("/p/\xc3\xa5/t/h",            url_get_path    (url));
   STRING_ASSERT("query=string",               url_get_query   (url));
   STRING_ASSERT("hash",                       url_get_fragment(url));
   STRING_ASSERT("8080",                       url_get_port    (url));
