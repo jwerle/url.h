@@ -13,6 +13,8 @@ enum Category
   Fragment   = 0x40,  // same as Query :-)
   Userinfo   = 0x80,  // alnum unreserved subdelim :
   IPv6Char   = 0x100, // hexdigit :
+  QueryKey   = 0x200, // alnum unreserved  ! $ ' ( ) * + , / ?
+  QueryValue = 0x400, // querykey =
 };
 
 #endif
