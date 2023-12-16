@@ -73,11 +73,5 @@ int main()
 	
 	fill( IPv6Char, "0123456789", "abcdef" "ABCDEF" ":");
 
-	fill( QueryKey, alnum, unreserved);
-	fill( QueryKey, "!$'()*+,/?", ""); // omit & ; =  from pchar
-	
-	fill( QueryValue, alnum, unreserved);
-	fill( QueryValue, "!$'()*+,:@/?", "="); // omit & ;  from pchar
-	
 	print_table();
 }
