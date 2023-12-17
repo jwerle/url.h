@@ -50,13 +50,20 @@ strdup (const char *str) {
 #endif
 
 
+struct url_key_value
+{
+  const char* key;
+  const char* value;
+};
+
+
 static
 int unhex(const char* s)
 {
   if(*s>='0' && *s<='9')
     return *s - '0';
   
-  if(*s>='A' && *s<='E')
+  if(*s>='A' && *s<='F')
     return *s - 'A' + 10;
   
   if(*s>='a' && *s<='f')
@@ -77,8 +84,8 @@ char* decode_percent(char* s)
   {
     if(*in=='%')
     {
-      const int high = unhex(++in); if(high<0 || *s=='\0') return NULL;
-      const int low  = unhex(++in); if(low <0 || *s=='\0') return NULL;
+      const int high = unhex(++in); if(high<0 || *in=='\0') return NULL;
+      const int low  = unhex(++in); if(low <0 || *in=='\0') return NULL;
       *out = (char)(high*16u + low);
       ++out;
       ++in;
@@ -120,6 +127,56 @@ scan_decimal_number(char* start)
   }
   
   return (p!=start) ? p : NULL;
+}
+
+
+static
+struct url_key_value* parse_query_string(char* begin, char* end)
+{
+  unsigned elements = 1; // each query has at least 1 element,
+  for(const char* p = begin; p!=end; ++p)
+  {
+    if(*p=='&' || *p==';')
+      ++elements;
+  }
+  
+  fprintf(stderr, "«« query has %u key-value pairs. begin=%p end=%p len=%lu.\n", elements, begin, end, (end-begin));
+  struct url_key_value* kv = calloc(elements+1, sizeof(struct url_key_value)); // add one {NULL,NULL} element as array terminator.
+  if(!kv)
+    return NULL;
+  
+  char* p = begin;
+  for(unsigned element=0; (element<=elements) && (p<end); ++element)
+  {
+    char* key = p;
+    char* kv_end = scan_part(p, Query, '&', ';');
+    if(!kv_end)
+      GOTO_ERROR;
+    
+    *kv_end = '\0';
+    
+    char* key_end = scan_part(p, Query, '=', '\0');
+    
+    const bool has_value = (*key_end == '=');
+    *key_end = '\0';
+    
+    kv[element].key = decode_percent(key);
+    if(has_value) // real key-value pair
+    {
+      char* value = key_end+1;
+      kv[element].value = decode_percent(value);
+    }
+    
+    fprintf(stderr, "«««« #%u key=%s value=%s.\n", element, kv[element].key, kv[element].value);
+    p = kv_end+1;
+    
+  }
+  
+  return kv;
+  
+error:
+  free(kv);
+  return NULL;
 }
 
 
@@ -248,10 +305,12 @@ url_parse (const char* url) {
     char* query_end = scan_part( p, Query, '#', '\0' );
     if(query_end)
     {
-      data->query = p;
-      if(*query_end == '#') // fragment followes query: ...?query#fragment
+      const bool has_fragment = (*query_end == '#');
+      *query_end = '\0';
+      
+      data->query = parse_query_string(p, query_end);
+      if(has_fragment) // fragment followes query: ...?query#fragment
       {
-        *query_end = '\0';
         char* fragment_end = scan_part( query_end+1, Fragment, '\0', '\0' );
         if(fragment_end)
         {
@@ -273,6 +332,7 @@ url_parse (const char* url) {
           GOTO_ERROR;
         }
   }
+  
   
 //finished:
   return data;
@@ -350,15 +410,21 @@ url_get_path (const char* url) {
   GET_MEMBER(path);
 }
 
-char *
-url_get_search (const char* url) {
-  GET_MEMBER(query);
+
+const char *
+url_get_query_value (const url_data_t* url, const char* key)
+{
+  if(url->query == NULL)
+    return NULL;
+    
+  for( const struct url_key_value* kv = url->query; kv->key; ++kv)
+  {
+     if(strcmp(kv->key, key) == 0)
+       return kv->value;
+  }
+  return NULL;
 }
 
-char *
-url_get_query (const char* url) {
-  GET_MEMBER(query);
-}
 
 char *
 url_get_fragment (const char* url) {
@@ -392,7 +458,17 @@ url_data_inspect (const url_data_t* data) {
   PRINT_MEMBER(host);
   PRINT_MEMBER(port);
   PRINT_MEMBER(path);
-  PRINT_MEMBER(query);
+  if(data->query)
+  {
+     for(unsigned nr=0; data->query[nr].key; ++nr)
+     {
+        printf("    .query[%u]: \"%s\" -> ", nr, data->query[nr].key);
+        if(data->query[nr].value)
+          printf("\"%s\"\n", data->query[nr].value);
+        else
+          printf("(NULL)\n");
+     }
+  }
   PRINT_MEMBER(fragment);
 }
 
@@ -400,6 +476,7 @@ void
 url_free (url_data_t *data) {
   if (!data) return;
   free(data->whole_url);
+  free((void*)data->query);
   free(data);
 }
 

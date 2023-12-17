@@ -44,6 +44,8 @@
 #define URL_AUTH_MAX_LENGTH 32
 
 
+struct url_key_value;
+
 /**
  * `url_data` struct that defines parts
  * of a parsed URL such as host and protocol
@@ -55,7 +57,7 @@ typedef struct url_data {
   const char* host;
   const char* port;  // can be NULL
   const char* path;
-  const char* query; // can be NULL
+  const struct url_key_value* query; // can be NULL
   const char* fragment;  // can be NULL
 } url_data_t;
 
@@ -96,10 +98,11 @@ url_get_hostname (const char* url);
 char *
 url_get_path (const char* url);
 
-// Parses url, returns the query string (afterthe "?") of the URL if present or NULL.
-// Caller must free() the returned string if not NULL.
-char *
-url_get_query (const char* url);
+// returns the value for the URL query key, if present.
+// returns NULL if URL query does not contain this key.
+// value belongs to url, caller MUST NOT free() the string!
+const char *
+url_get_query_value (const url_data_t* url, const char* key);
 
 // Parses url, returns the fragment (after the "#") of the URL if present or NULL.
 // Caller must free() the returned string if not NULL.
