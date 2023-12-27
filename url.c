@@ -164,6 +164,8 @@ struct url_key_value* parse_query_string(char* begin, char* end)
     {
       char* value = key_end+1;
       kv[element].value = decode_percent(value);
+    }else{
+      kv[element].value = key_end;
     }
     
     p = kv_end+1;
