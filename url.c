@@ -140,7 +140,6 @@ struct url_key_value* parse_query_string(char* begin, char* end)
       ++elements;
   }
   
-  fprintf(stderr, "«« query has %u key-value pairs. begin=%p end=%p len=%lu.\n", elements, begin, end, (end-begin));
   struct url_key_value* kv = calloc(elements+1, sizeof(struct url_key_value)); // add one {NULL,NULL} element as array terminator.
   if(!kv)
     return NULL;
@@ -167,7 +166,6 @@ struct url_key_value* parse_query_string(char* begin, char* end)
       kv[element].value = decode_percent(value);
     }
     
-    fprintf(stderr, "«««« #%u key=%s value=%s.\n", element, kv[element].key, kv[element].value);
     p = kv_end+1;
     
   }
