@@ -58,6 +58,7 @@ main (void) {
   assert( strcmp("strin\xc4\x9f",             url_get_query_value   (parsed, "qu\xc3\xabry"))==0 );
   assert( strcmp("bar=yuk",                   url_get_query_value   (parsed, "foo"))==0 );
   assert( strcmp("%",                         url_get_query_value   (parsed, "key#&="))==0 );
+  assert( strcmp("",                          url_get_query_value   (parsed, "lol"))==0 );
   STRING_ASSERT("hæsh",                       url_get_fragment(url));
   STRING_ASSERT("8080",                       url_get_port    (url));
 
