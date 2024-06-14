@@ -1,11 +1,22 @@
+.PHONY: all clean url-test
 
-all: clean test
+all: url-test
 
 clean:
-	rm -rf url-test
+	rm -rvf url-test *.o url_char_category_table.h
 
-test: test.c
-	$(CC) -std=c99 -Wall -I. url.c $< -o url-test
+%.o: %.c
+	$(CC) -g -std=c99 -Wall -c -o $@ $^
+
+url.c: url.h url_char_category.h url_char_category_table.h
+
+url_char_category_table.h: gen_char_category_table
+	./gen_char_category_table > url_char_category_table.h
+
+gen_char_category_table: gen_char_category_table.o
+	$(CC) -g -std=c99 -Wall -o $@ $^
+
+url-test: test.o url.o
+	$(CC) -g -std=c99 -Wall -I. -o $@ $^
 	./url-test
 
-.PHONY: all clean test
